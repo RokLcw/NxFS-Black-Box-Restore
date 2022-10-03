@@ -1,1 +1,3 @@
-# NxFS-Black-Box-Restore
+# 포맷프리(NxFs) 방식 블랙박스 영상복구 도구
+
+BoB 11기 삼청이 팀
