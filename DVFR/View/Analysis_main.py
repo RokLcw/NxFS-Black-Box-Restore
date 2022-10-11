@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QMessageBox
 from PyQt5.QtGui import QIcon
+import os
 
 file_path = []
 
@@ -45,12 +46,9 @@ class Analysis_main():
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 619, 519))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.listWidget_2 = QtWidgets.QListWidget(self.scrollAreaWidgetContents)
-        self.listWidget_2.setGeometry(QtCore.QRect(0, 0, 621, 521))
-        self.listWidget_2.setObjectName("listWidget_2")
-        for i in range(0, 10):
-            
-            self.listWidget_2.addItem(self.fileInfo_item)
+        self.textBrowser = QtWidgets.QTextBrowser(self.scrollAreaWidgetContents)
+        self.textBrowser.setGeometry(QtCore.QRect(0, 0, 621, 521))
+        self.textBrowser.setObjectName("textBrowser")
         self.scrollArea_2.setWidget(self.scrollAreaWidgetContents)
         self.tabWidget.addTab(self.tab, "")
 
@@ -81,13 +79,8 @@ class Analysis_main():
         self.pushButton.setText(_translate("MainWindow", "추출"))
 
         # --------------------- File Info ---------------------
-        __sortingEnabled = self.listWidget_2.isSortingEnabled()
-        self.listWidget_2.setSortingEnabled(False)
-        # for i in range(0, 10):
-        #     item = self.listWidget_2.item(i)
-        #     item.setText(_translate("MainWindow", "새 항목"))
-        self.listWidget_2.setSortingEnabled(__sortingEnabled)
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "File Info"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), "File Info")
+        self.listWidget.itemSelectionChanged.connect(self.File_info)
         __sortingEnabled = self.listWidget_3.isSortingEnabled()
 
         # --------------------- Result ---------------------
@@ -107,6 +100,13 @@ class Analysis_main():
 
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def File_info(self):
+        # 파일 정보 (추가 예정)
+        item = self.listWidget.currentItem()
+        file_size = os.path.getsize(item.text())
+        self.textBrowser.setHtml("file name: " + QtCore.QFileInfo(item.text()).fileName() + "<br>" + "file path: " + item.text()
+        + "<br>" + "Size: " + str(file_size) + " bytes" + "<br>" + "전체 영상: " + "" + "<br>" + "손상된 영상: " + "")
 
     def ui_frame(self, MainWindow):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -183,7 +183,7 @@ class Analysis_main():
         file_loc = QFileDialog.getOpenFileName(self.menufile, 'Open file', './')
         file_path.append(file_loc[0])
         print(file_path)
-        self.load_item.setText(QtCore.QFileInfo(file_loc[0]).fileName())  # 
+        self.load_item.setText(file_loc[0])  # 
         query = self.load_item.toPlainText()
         self.listWidget.addItem(query)
 
