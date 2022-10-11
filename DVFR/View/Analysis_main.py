@@ -1,16 +1,21 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog
-from PyQt5.QtGui import QIcon   
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget
+from PyQt5.QtGui import QIcon
+
+file_path = []
 
 class Analysis_main():
     def __init__(self, MainWindow):
-        self.load_item = QtWidgets.QListWidgetItem() # 불러온 영상 리스트
+        self.load_item = QtWidgets.QTextEdit() # 불러온 영상 리스트 보여줌
         self.fileInfo_item = QtWidgets.QListWidgetItem() # File Info
         self.Result_item = QtWidgets.QListWidgetItem()   # Result
 
         self.ui_frame(MainWindow)   # ui 뼈대??
+
+        self.active_main(MainWindow)
+
+    def active_main(self, MainWindow):
         self.menubar(MainWindow)    # menubar
-    
         
         # --------------------- 불러온 영상 리스트 ---------------------
         self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -93,7 +98,7 @@ class Analysis_main():
         self.listWidget_3.setSortingEnabled(__sortingEnabled)
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Result"))
 
-        # --------------------- status bar ---------------------
+        # --------------------- menu bar ---------------------
         self.menufile.setTitle(_translate("MainWindow", "file"))
         self.menusetting.setTitle(_translate("MainWindow", "setting"))
         self.menuabout.setTitle(_translate("MainWindow", "about"))
@@ -129,43 +134,6 @@ class Analysis_main():
         self.progressBar.setObjectName("progressBar")
         self.horizontalLayout_2.addWidget(self.progressBar)
 
-    def file_open(self, MainWindow):
-        # -------- File open --------
-        self.actionopen = QtWidgets.QAction(MainWindow)
-        self.actionopen.setObjectName("actionopen")
-        openFile = QAction(QIcon('open.png'), 'Open', self.menufile)
-        openFile.setShortcut('Ctrl+O')
-        openFile.setStatusTip('Open New File')
-        openFile.triggered.connect(self.showDialog)
-
-        self.menufile.addAction(openFile)
-
-
-    def showDialog(self):   # 불러온 영상 리스트
-        fname = QFileDialog.getOpenFileName(self.menufile, 'Open file', './')
-        self.listWidget.addItem(self.load_item)
-        self.load_item.setText(fname[0])
-
-    def menu_file(self, MainWindow):
-        self.menufile = QtWidgets.QMenu(self.menubar)
-        self.menufile.setObjectName("menufile")
-
-        # open file
-        self.file_open(MainWindow)
-
-    def menu_setting(self, MainWindow):
-        self.menusetting = QtWidgets.QMenu(self.menubar)
-        self.menusetting.setObjectName("menusetting")
-    
-    def menu_about(self, MainWindow):
-        self.menuabout = QtWidgets.QMenu(self.menubar)
-        self.menuabout.setObjectName("menuabout")
-
-        # about us
-        self.actionabout_us = QtWidgets.QAction(MainWindow)
-        self.actionabout_us.setObjectName("actionabout_us")
-        self.menuabout.addAction(self.actionabout_us)
-
     def menubar(self, MainWindow):
         # --------------------- menu bar ---------------------
         MainWindow.setCentralWidget(self.centralwidget)
@@ -190,3 +158,44 @@ class Analysis_main():
         self.menubar.addAction(self.menufile.menuAction())
         self.menubar.addAction(self.menusetting.menuAction())
         self.menubar.addAction(self.menuabout.menuAction())
+
+    def menu_file(self, MainWindow):
+        # file menu
+        self.menufile = QtWidgets.QMenu(self.menubar)
+        self.menufile.setObjectName("menufile")
+
+        # open file
+        self.file_open(MainWindow)
+
+    def file_open(self, MainWindow):
+        # -------- File open --------
+        self.actionopen = QtWidgets.QAction(MainWindow)
+        self.actionopen.setObjectName("actionopen")
+        openFile = QAction(QIcon('open.png'), 'Open', self.menufile)
+        openFile.setShortcut('Ctrl+O')
+        openFile.setStatusTip('Open New File')
+        openFile.triggered.connect(self.showDialog)
+        
+        self.menufile.addAction(openFile)
+
+    def showDialog(self):   
+        # 불러온 영상 리스트
+        file_loc = QFileDialog.getOpenFileName(self.menufile, 'Open file', './')
+        file_path.append(file_loc[0])
+        print(file_path)
+        self.load_item.setText(QtCore.QFileInfo(file_loc[0]).fileName())  # 
+        query = self.load_item.toPlainText()
+        self.listWidget.addItem(query)
+
+    def menu_setting(self, MainWindow): # setting menu
+        self.menusetting = QtWidgets.QMenu(self.menubar)
+        self.menusetting.setObjectName("menusetting")
+    
+    def menu_about(self, MainWindow):   # about menu
+        self.menuabout = QtWidgets.QMenu(self.menubar)
+        self.menuabout.setObjectName("menuabout")
+
+        # about us
+        self.actionabout_us = QtWidgets.QAction(MainWindow)
+        self.actionabout_us.setObjectName("actionabout_us")
+        self.menuabout.addAction(self.actionabout_us)
