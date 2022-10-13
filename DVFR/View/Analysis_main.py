@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QListWidget
 from PyQt5.QtGui import QIcon, QPixmap
 import os
 
@@ -65,33 +65,8 @@ class Analysis_main():
         self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents_2)
         self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_2)
 
-        x = 0
-        y = 0
-        file_path ="View/image/"
 
-        
-        for file in os.listdir(file_path):
-            if(x == 4):
-                x = 0
-                y += 1
-
-            # 버튼 안의 아이콘으로 이미지 출력
-            self.button_img = QtWidgets.QPushButton()
-            self.button_img.setIcon(QIcon(file_path + file))
-            self.button_img.setIconSize(QtCore.QSize(100,100))
-            self.button_img.setObjectName(file)
-            #self.button_img.setText(file)
-            #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            #self.button_img.setStyleSheet('PushButton{background-color:rgba(0,0,0,0)')
-            #self.button_img.setStyleSheet('PushButton{border-color:rgba(0,0,0,0)')
-            self.button_img.clicked.connect(self.dialog_open)
-            
-            self.gridLayout.addWidget(self.button_img, y, x)
-            x += 1
-        
-
-
-        self.tabWidget.addTab(self.tab_2, "") 
+        self.tabWidget.addTab(self.tab_2, "")
 
         # ---------------------------------
 
@@ -103,10 +78,13 @@ class Analysis_main():
         # --------------------- File Info ---------------------
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), "File Info")
         self.listWidget.itemSelectionChanged.connect(self.File_info)
-        
 
         # --------------------- Result ---------------------
-        
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), "Result")
+        self.listWidget.itemSelectionChanged.connect(self.show_Result)  # 눌린 listwidjet에 따라서.
+
+        # delete
+        self.pushButton_2.clicked.connect(self.file_del)
 
         # --------------------- menu bar ---------------------
         self.menufile.setTitle(_translate("MainWindow", "file"))
@@ -121,9 +99,12 @@ class Analysis_main():
     def File_info(self):
         # 파일 정보 (추가 예정)
         item = self.listWidget.currentItem()
-        file_size = os.path.getsize(item.text())
-        self.textBrowser.setHtml("file name: " + QtCore.QFileInfo(item.text()).fileName() + "<br>" + "file path: " + item.text()
-        + "<br>" + "Size: " + str(file_size) + " bytes" + "<br>" + "전체 영상: " + "" + "<br>" + "손상된 영상: " + "")
+        if item:
+            file_size = os.path.getsize(item.text())
+            self.textBrowser.setHtml("file name: " + QtCore.QFileInfo(item.text()).fileName() + "<br>" + "file path: " + item.text()
+            + "<br>" + "Size: " + str(file_size) + " bytes" + "<br>" + "전체 영상: " + "" + "<br>" + "손상된 영상: " + "")
+        else:
+            self.textBrowser.setHtml("")
 
     def ui_frame(self, MainWindow):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -215,8 +196,11 @@ class Analysis_main():
         self.actionabout_us.setObjectName("actionabout_us")
         self.menuabout.addAction(self.actionabout_us)
 
-        # 다이얼로그 생성 함수
-    def dialog_open(self):
+    def file_del(self):
+        rn = self.listWidget.currentRow()
+        self.listWidget.takeItem(rn)
+
+    def dialog_open(self):  # open이 안되는 현상 발생.
         self.dialog = QtWidgets.QDialog()
         file = self.sender().objectName()
 
@@ -233,3 +217,28 @@ class Analysis_main():
         self.dialog.setWindowTitle(file)
         self.dialog.resize(500,450)
         self.dialog.show()
+
+    def show_Result(self):
+        x = 0
+        y = 0
+        file_path ="View/image/"
+
+        
+        for file in os.listdir(file_path):
+            if(x == 4):
+                x = 0
+                y += 1
+
+            # 버튼 안의 아이콘으로 이미지 출력
+            self.button_img = QtWidgets.QPushButton()
+            self.button_img.setIcon(QIcon(file_path + file))
+            self.button_img.setIconSize(QtCore.QSize(100,100))
+            self.button_img.setObjectName(file)
+            #self.button_img.setText(file)
+            #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            #self.button_img.setStyleSheet('PushButton{background-color:rgba(0,0,0,0)')
+            #self.button_img.setStyleSheet('PushButton{border-color:rgba(0,0,0,0)')
+            # self.button_img.clicked.connect(self.dialog_open)
+            
+            self.gridLayout.addWidget(self.button_img, y, x)
+            x += 1
