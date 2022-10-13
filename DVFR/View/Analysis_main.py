@@ -1,9 +1,8 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QMessageBox
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 import os
 
-file_path = []
 
 class Analysis_main():
     def __init__(self, MainWindow):
@@ -62,14 +61,37 @@ class Analysis_main():
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 619, 519))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
-        self.listWidget_3 = QtWidgets.QListWidget(self.scrollAreaWidgetContents_2)
-        self.listWidget_3.setGeometry(QtCore.QRect(0, 0, 621, 521))
-        self.listWidget_3.setObjectName("listWidget_3")
-        for i in range(0, 10):
-            
-            self.listWidget_3.addItem(self.Result_item)
+
+        self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents_2)
         self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_2)
-        self.tabWidget.addTab(self.tab_2, "")     
+
+        x = 0
+        y = 0
+        file_path ="View/image/"
+
+        
+        for file in os.listdir(file_path):
+            if(x == 4):
+                x = 0
+                y += 1
+
+            # 버튼 안의 아이콘으로 이미지 출력
+            self.button_img = QtWidgets.QPushButton()
+            self.button_img.setIcon(QIcon(file_path + file))
+            self.button_img.setIconSize(QtCore.QSize(100,100))
+            self.button_img.setObjectName(file)
+            #self.button_img.setText(file)
+            #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            #self.button_img.setStyleSheet('PushButton{background-color:rgba(0,0,0,0)')
+            #self.button_img.setStyleSheet('PushButton{border-color:rgba(0,0,0,0)')
+            self.button_img.clicked.connect(self.dialog_open)
+            
+            self.gridLayout.addWidget(self.button_img, y, x)
+            x += 1
+        
+
+
+        self.tabWidget.addTab(self.tab_2, "") 
 
         # ---------------------------------
 
@@ -81,15 +103,10 @@ class Analysis_main():
         # --------------------- File Info ---------------------
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), "File Info")
         self.listWidget.itemSelectionChanged.connect(self.File_info)
-        __sortingEnabled = self.listWidget_3.isSortingEnabled()
+        
 
         # --------------------- Result ---------------------
-        self.listWidget_3.setSortingEnabled(False)
-        # for i in range(0, 10):
-        #     item = self.listWidget_3.item(i)
-        #     item.setText(_translate("MainWindow", "새 항목"))
-        self.listWidget_3.setSortingEnabled(__sortingEnabled)
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Result"))
+        
 
         # --------------------- menu bar ---------------------
         self.menufile.setTitle(_translate("MainWindow", "file"))
@@ -181,8 +198,6 @@ class Analysis_main():
     def showDialog(self):   
         # 불러온 영상 리스트
         file_loc = QFileDialog.getOpenFileName(self.menufile, 'Open file', './')
-        file_path.append(file_loc[0])
-        print(file_path)
         self.load_item.setText(file_loc[0])  # 
         query = self.load_item.toPlainText()
         self.listWidget.addItem(query)
@@ -199,3 +214,22 @@ class Analysis_main():
         self.actionabout_us = QtWidgets.QAction(MainWindow)
         self.actionabout_us.setObjectName("actionabout_us")
         self.menuabout.addAction(self.actionabout_us)
+
+        # 다이얼로그 생성 함수
+    def dialog_open(self):
+        self.dialog = QtWidgets.QDialog()
+        file = self.sender().objectName()
+
+
+        # 이미지 출력
+        photo = QtWidgets.QLabel(self.dialog)
+        photo.setPixmap(QPixmap("View/image/"+ file))
+        photo.setContentsMargins(10,10,10,10)
+        photo.resize(photo.width()+400, photo.height()+400)
+        photo.setScaledContents(True)
+        photo.setObjectName("photo")
+
+        #QDialog 세팅
+        self.dialog.setWindowTitle(file)
+        self.dialog.resize(500,450)
+        self.dialog.show()
