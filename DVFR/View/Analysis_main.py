@@ -1,5 +1,6 @@
+from importlib.util import MAGIC_NUMBER
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QListWidget
+from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QIcon, QPixmap
 import os
 
@@ -71,10 +72,10 @@ class Analysis_main():
         # ---------------------------------
 
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "DVFR"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Damaged Video File Retore (DVFR)"))
         self.pushButton_2.setText(_translate("MainWindow", "삭제"))
         self.pushButton.setText(_translate("MainWindow", "추출"))
-
+        
         # --------------------- File Info ---------------------
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), "File Info")
         self.listWidget.itemSelectionChanged.connect(self.File_info)
@@ -83,7 +84,7 @@ class Analysis_main():
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), "Result")
         self.listWidget.itemSelectionChanged.connect(self.show_Result)  # 눌린 listwidjet에 따라서.
 
-        # delete
+        # --------------------- delete ---------------------
         self.pushButton_2.clicked.connect(self.file_del)
 
         # --------------------- menu bar ---------------------
@@ -200,14 +201,13 @@ class Analysis_main():
         rn = self.listWidget.currentRow()
         self.listWidget.takeItem(rn)
 
-    def dialog_open(self):  # open이 안되는 현상 발생.
+    def dialog_open(self, file_path):  # open이 안되는 현상 발생.
         self.dialog = QtWidgets.QDialog()
         file = self.sender().objectName()
 
-
         # 이미지 출력
         photo = QtWidgets.QLabel(self.dialog)
-        photo.setPixmap(QPixmap("View/image/"+ file))
+        photo.setPixmap(QPixmap(file_path + file))
         photo.setContentsMargins(10,10,10,10)
         photo.resize(photo.width()+400, photo.height()+400)
         photo.setScaledContents(True)
@@ -221,7 +221,9 @@ class Analysis_main():
     def show_Result(self):
         x = 0
         y = 0
-        file_path ="View/image/"
+        # signature = {'jpeg_head':bytes([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46])}
+        # file_path = self.listWidget.currentItem().text()
+        file_path = "View/image/"
 
         
         for file in os.listdir(file_path):
@@ -238,7 +240,7 @@ class Analysis_main():
             #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             #self.button_img.setStyleSheet('PushButton{background-color:rgba(0,0,0,0)')
             #self.button_img.setStyleSheet('PushButton{border-color:rgba(0,0,0,0)')
-            # self.button_img.clicked.connect(self.dialog_open)
+            # self.button_img.clicked.connect(self.dialog_open(file_path))  # 이미지 크게 보기
             
             self.gridLayout.addWidget(self.button_img, y, x)
             x += 1
