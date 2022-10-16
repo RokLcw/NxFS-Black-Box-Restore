@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QIcon, QPixmap
 import os
+from functools import partial
 
 
 class Analysis_main():
@@ -201,13 +202,13 @@ class Analysis_main():
         rn = self.listWidget.currentRow()
         self.listWidget.takeItem(rn)
 
-    def dialog_open(self, file_path):  # open이 안되는 현상 발생.
+    def dialog_open(self, file): 
+        path = "View/image/"
         self.dialog = QtWidgets.QDialog()
-        file = self.sender().objectName()
 
         # 이미지 출력
         photo = QtWidgets.QLabel(self.dialog)
-        photo.setPixmap(QPixmap(file_path + file))
+        photo.setPixmap(QPixmap(path + file))
         photo.setContentsMargins(10,10,10,10)
         photo.resize(photo.width()+400, photo.height()+400)
         photo.setScaledContents(True)
@@ -223,24 +224,22 @@ class Analysis_main():
         y = 0
         # signature = {'jpeg_head':bytes([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46])}
         # file_path = self.listWidget.currentItem().text()
-        file_path = "View/image/"
+        path = "View/image/"
 
-        
-        for file in os.listdir(file_path):
+        for file in os.listdir(path):
             if(x == 4):
                 x = 0
                 y += 1
 
             # 버튼 안의 아이콘으로 이미지 출력
             self.button_img = QtWidgets.QPushButton()
-            self.button_img.setIcon(QIcon(file_path + file))
+            self.button_img.setIcon(QIcon(path + file))
             self.button_img.setIconSize(QtCore.QSize(100,100))
-            self.button_img.setObjectName(file)
             #self.button_img.setText(file)
             #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             #self.button_img.setStyleSheet('PushButton{background-color:rgba(0,0,0,0)')
             #self.button_img.setStyleSheet('PushButton{border-color:rgba(0,0,0,0)')
-            # self.button_img.clicked.connect(self.dialog_open(file_path))  # 이미지 크게 보기
+            self.button_img.clicked.connect(partial(self.dialog_open, file = file))  # 이미지 크게 보기
             
             self.gridLayout.addWidget(self.button_img, y, x)
             x += 1
