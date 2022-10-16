@@ -1,3 +1,7 @@
 ~20221011
 1. made file open function
-2. making file metadata parsing function (Now)
+
+~20221016
+2. made file metadata parsing function
+
+(Now) making parsing page to display (assigned data) video lists & hex data .
