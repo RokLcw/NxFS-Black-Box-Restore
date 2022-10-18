@@ -1,4 +1,3 @@
-from importlib.util import MAGIC_NUMBER
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QIcon, QPixmap
