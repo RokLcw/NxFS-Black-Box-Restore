@@ -1,6 +1,9 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QAction, QFileDialog
+from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow, QWidget, QPushButton, QApplication, QLabel, QStyle, QHBoxLayout, QSizePolicy, QSlider, QVBoxLayout
 from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 import os
 from functools import partial
 import itertools
@@ -207,21 +210,35 @@ class Analysis_main():
         self.listWidget.takeItem(rn)
 
     def dialog_open(self, file): 
-        path = "View/image(fake)/result/" + str(input_data) + "/"
-        self.dialog = QtWidgets.QDialog()
+        self.windows = []
 
-        # 이미지 출력
-        photo = QtWidgets.QLabel(self.dialog)
-        photo.setPixmap(QPixmap(path + file))
-        photo.setContentsMargins(10,10,10,10)
-        photo.resize(photo.width()+400, photo.height()+400)
-        photo.setScaledContents(True)
-        photo.setObjectName("photo")
+        path = "View/image/"
 
-        #QDialog 세팅
-        self.dialog.setWindowTitle(file)
-        self.dialog.resize(500,450)
-        self.dialog.show()
+        ext = file.split('.')
+
+        if(ext[1] == 'mp4'):            
+            videoplayer = VideoPlayer(file)
+            self.windows.append(videoplayer)
+            videoplayer.resize(640, 480)
+            videoplayer.setWindowTitle(file)
+            videoplayer.show()
+                        
+
+        else:
+            self.dialog = QtWidgets.QDialog()
+
+            # 이미지 출력
+            photo = QtWidgets.QLabel(self.dialog)
+            photo.setPixmap(QPixmap(path + file))
+            photo.setContentsMargins(10,10,10,10)
+            photo.resize(photo.width()+400, photo.height()+400)
+            photo.setScaledContents(True)
+            photo.setObjectName("photo")
+
+            #QDialog 세팅
+            self.dialog.setWindowTitle(file)
+            self.dialog.resize(500,450)
+            self.dialog.show()
 
     def show_Result(self):
         x = 0
@@ -241,8 +258,13 @@ class Analysis_main():
 
             # 버튼 안의 아이콘으로 이미지 출력
             self.button_img = QtWidgets.QPushButton()
-            self.button_img.setIcon(QIcon(path + file))
-            print(path+file)
+            
+            ext = file.split('.')
+            if(ext[1] == 'mp4'):
+                self.button_img.setIcon(QIcon("play_button.png"))
+            else:
+                self.button_img.setIcon(QIcon(path + file))
+
             self.button_img.setIconSize(QtCore.QSize(100,100))
             #self.button_img.setText(file)
             #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -332,3 +354,85 @@ class Analysis_main():
         f.close()
 
         print('[*] Out_file :' + out_file_name)
+
+# 영상 출력 클래스
+class VideoPlayer(QMainWindow):
+    
+    def __init__(self, file):
+        path = "View/image(fake)/result/" + str(input_data) + "/"
+
+        super().__init__()
+
+        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        videoWidget = QVideoWidget()
+
+        self.playButton = QPushButton()
+        self.playButton.setEnabled(False)
+        self.playButton.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
+        self.playButton.clicked.connect(self.play)
+
+        self.positionSlider = QSlider(Qt.Horizontal)
+        self.positionSlider.setRange(0, 0)
+        self.positionSlider.sliderMoved.connect(self.setPosition)
+
+        self.error = QLabel()
+        self.error.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+
+        # 파일 경로 설정
+        fileName = path + file
+        self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(fileName)))
+        self.playButton.setEnabled(True)
+
+        # 창 위젯 생성
+        wid = QWidget(self)
+        self.setCentralWidget(wid)
+    
+        # 레이아웃 생성
+        controlLayout = QHBoxLayout()
+        controlLayout.setContentsMargins(0, 0, 0, 0)
+        controlLayout.addWidget(self.playButton)
+        controlLayout.addWidget(self.positionSlider)
+ 
+        layout = QVBoxLayout()
+        layout.addWidget(videoWidget)
+        layout.addLayout(controlLayout)
+        layout.addWidget(self.error)
+
+        # Set widget to contain window contents
+        wid.setLayout(layout)
+    
+        self.mediaPlayer.setVideoOutput(videoWidget)
+        self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
+        self.mediaPlayer.positionChanged.connect(self.positionChanged)
+        self.mediaPlayer.durationChanged.connect(self.durationChanged)
+        self.mediaPlayer.error.connect(self.handleError)
+
+        self.playButton.setEnabled(True)
+
+    def play(self):
+        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
+            self.mediaPlayer.pause()
+        else:
+            self.mediaPlayer.play()
+ 
+    def mediaStateChanged(self, state):
+        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
+            self.playButton.setIcon(
+                    QApplication.style().standardIcon(QStyle.SP_MediaPause))
+        else:
+            self.playButton.setIcon(
+                    QApplication.style().standardIcon(QStyle.SP_MediaPlay))
+ 
+    def positionChanged(self, position):
+        self.positionSlider.setValue(position)
+ 
+    def durationChanged(self, duration):
+        self.positionSlider.setRange(0, duration)
+ 
+    def setPosition(self, position):
+        self.mediaPlayer.setPosition(position)
+ 
+    def handleError(self):
+        self.playButton.setEnabled(False)
+        self.error.setText("Error: " + self.mediaPlayer.errorString())
+
