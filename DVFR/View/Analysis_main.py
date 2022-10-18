@@ -226,6 +226,9 @@ class Analysis_main():
         x = 0
         y = 0
 
+        global out_file_cnt
+        out_file_cnt = 0
+
         self.image_process()
         path = "View/image(fake)/result/" + str(input_data) + "/"
         print(path)
