@@ -3,7 +3,11 @@ from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QIcon, QPixmap
 import os
 from functools import partial
+import itertools
 
+out_file_cnt = 0
+out_file_flag = 0
+input_data = 0
 
 class Analysis_main():
     def __init__(self, MainWindow):
@@ -202,7 +206,7 @@ class Analysis_main():
         self.listWidget.takeItem(rn)
 
     def dialog_open(self, file): 
-        path = "View/image/"
+        path = "View/image(fake)/result/" + str(input_data) + "/"
         self.dialog = QtWidgets.QDialog()
 
         # 이미지 출력
@@ -221,9 +225,10 @@ class Analysis_main():
     def show_Result(self):
         x = 0
         y = 0
-        # signature = {'jpeg_head':bytes([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46])}
-        # file_path = self.listWidget.currentItem().text()
-        path = "View/image/"
+
+        self.image_process()
+        path = "View/image(fake)/result/" + str(input_data) + "/"
+        print(path)
 
         for file in os.listdir(path):
             if(x == 4):
@@ -233,6 +238,7 @@ class Analysis_main():
             # 버튼 안의 아이콘으로 이미지 출력
             self.button_img = QtWidgets.QPushButton()
             self.button_img.setIcon(QIcon(path + file))
+            print(path+file)
             self.button_img.setIconSize(QtCore.QSize(100,100))
             #self.button_img.setText(file)
             #self.button_img.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -242,3 +248,83 @@ class Analysis_main():
             
             self.gridLayout.addWidget(self.button_img, y, x)
             x += 1
+
+    def image_process(self):
+        item = self.listWidget.currentItem()
+
+        signature_head = ['ff d8 ff e0']
+        signature_foot = {'ff d8 ff e0':'ff d9'}
+
+        string = ''
+        cnt = -1
+        string = ''
+        global input_data
+
+        input_data = QtCore.QFileInfo(item.text()).fileName()
+
+        os.mkdir("View/image(fake)/result/" + input_data)
+
+        for line in self.open_file():
+            string += line.replace("   ", " ")
+
+
+        # with open("result.txt", "a") as f:
+        #     f.write(string)
+
+        while (cnt < len(signature_head)-1):
+            cnt += 1
+            if (string.find(signature_head[cnt]) != -1):      
+                file_index_start = string.index(signature_head[cnt])
+                header_signature = string[file_index_start:file_index_start+len(signature_head[cnt])]
+                footer_signature = signature_foot[header_signature]
+                out_file_flag = 1
+
+                if(string[file_index_start:].find(footer_signature)!= -1):
+                    file_index_end = string[file_index_start:].index(footer_signature)+ file_index_start + len(footer_signature)
+                else:
+                    out_file_flag = 0
+                    continue
+
+            if (out_file_flag == 1):
+                out_file_flag = 0
+
+                new_file = string[file_index_start:file_index_end]
+
+                self.file_out(new_file, header_signature)
+                
+                # 추출 파일 삭제
+                next_index = file_index_end + 1
+                string = string[:file_index_start] + string[next_index:]
+
+                #print(string)
+                cnt = -1
+
+    def hex_group_formatter(self, iterable):
+        chunks = [iter(iterable)] * 4
+        return '   '.join(
+            ' '.join(format(x, '0>2x') for x in chunk)
+            for chunk in itertools.zip_longest(*chunks, fillvalue=0))
+
+    def open_file(self):
+        item = self.listWidget.currentItem()
+        template = ' {:<53}'
+        chunk_size = 16
+        global input_data
+        with open(item.text(), "rb") as f:
+            for i in itertools.count(0):
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    return
+
+                yield template.format(self.hex_group_formatter(chunk))
+
+    def file_out(self, string, header_signature):
+        file_extension = {'ff d8 ff e0':'jpg'}
+        global out_file_cnt, unit
+        out_file_cnt += 1
+        out_file_name = 'file_out_' + str(out_file_cnt) + '.' + file_extension[header_signature]
+        f = open("View/image(fake)/result/" + str(input_data) + "/" + out_file_name,'wb+')   
+        f.write(bytes.fromhex(string))
+        f.close()
+
+        print('[*] Out_file :', out_file_name,)
