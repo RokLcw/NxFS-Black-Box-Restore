@@ -4,6 +4,7 @@ from PyQt5.QtGui import QIcon, QPixmap
 import os
 from functools import partial
 import itertools
+from pathlib import Path
 
 out_file_cnt = 0
 out_file_flag = 0
@@ -265,7 +266,7 @@ class Analysis_main():
 
         input_data = QtCore.QFileInfo(item.text()).fileName()
 
-        os.mkdir("View/image(fake)/result/" + input_data)
+        Path("View/image(fake)/result/" + input_data).mkdir(parents=True, exist_ok=True)
 
         for line in self.open_file():
             string += line.replace("   ", " ")
@@ -330,4 +331,4 @@ class Analysis_main():
         f.write(bytes.fromhex(string))
         f.close()
 
-        print('[*] Out_file :', out_file_name,)
+        print('[*] Out_file :' + out_file_name)
