@@ -9,6 +9,8 @@ from functools import partial
 import itertools
 from pathlib import Path
 
+from .PlayVideo import VideoPlayer
+
 out_file_cnt = 0
 out_file_flag = 0
 input_data = 0
@@ -24,7 +26,7 @@ class Analysis_main():
         self.active_main(MainWindow)
 
     def active_main(self, MainWindow):
-        self.menubar(MainWindow)    # menubar
+        self.menu_bar(MainWindow)    # menubar
         
         # --------------------- 불러온 영상 리스트 ---------------------
         self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -141,7 +143,7 @@ class Analysis_main():
         self.progressBar.setObjectName("progressBar")
         self.horizontalLayout_2.addWidget(self.progressBar)
 
-    def menubar(self, MainWindow):
+    def menu_bar(self, MainWindow):
         # --------------------- menu bar ---------------------
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -212,12 +214,12 @@ class Analysis_main():
     def dialog_open(self, file): 
         self.windows = []
 
-        path = "View/image/"
+        path = "View/image(fake)/result/" + str(input_data) + "/"
 
         ext = file.split('.')
 
-        if(ext[1] == 'mp4'):            
-            videoplayer = VideoPlayer(file)
+        if(ext[1] == 'avi'):            
+            videoplayer = VideoPlayer(file, input_data)
             self.windows.append(videoplayer)
             videoplayer.resize(640, 480)
             videoplayer.setWindowTitle(file)
@@ -260,7 +262,7 @@ class Analysis_main():
             self.button_img = QtWidgets.QPushButton()
             
             ext = file.split('.')
-            if(ext[1] == 'mp4'):
+            if(ext[1] == 'avi'):
                 self.button_img.setIcon(QIcon("play_button.png"))
             else:
                 self.button_img.setIcon(QIcon(path + file))
@@ -289,7 +291,6 @@ class Analysis_main():
         input_data = QtCore.QFileInfo(item.text()).fileName()
 
         Path("View/image(fake)/result/" + input_data).mkdir(parents=True, exist_ok=True)
-
         for line in self.open_file():
             string += line.replace("   ", " ")
 
@@ -354,85 +355,3 @@ class Analysis_main():
         f.close()
 
         print('[*] Out_file :' + out_file_name)
-
-# 영상 출력 클래스
-class VideoPlayer(QMainWindow):
-    
-    def __init__(self, file):
-        path = "View/image(fake)/result/" + str(input_data) + "/"
-
-        super().__init__()
-
-        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        videoWidget = QVideoWidget()
-
-        self.playButton = QPushButton()
-        self.playButton.setEnabled(False)
-        self.playButton.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
-        self.playButton.clicked.connect(self.play)
-
-        self.positionSlider = QSlider(Qt.Horizontal)
-        self.positionSlider.setRange(0, 0)
-        self.positionSlider.sliderMoved.connect(self.setPosition)
-
-        self.error = QLabel()
-        self.error.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-
-        # 파일 경로 설정
-        fileName = path + file
-        self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(fileName)))
-        self.playButton.setEnabled(True)
-
-        # 창 위젯 생성
-        wid = QWidget(self)
-        self.setCentralWidget(wid)
-    
-        # 레이아웃 생성
-        controlLayout = QHBoxLayout()
-        controlLayout.setContentsMargins(0, 0, 0, 0)
-        controlLayout.addWidget(self.playButton)
-        controlLayout.addWidget(self.positionSlider)
- 
-        layout = QVBoxLayout()
-        layout.addWidget(videoWidget)
-        layout.addLayout(controlLayout)
-        layout.addWidget(self.error)
-
-        # Set widget to contain window contents
-        wid.setLayout(layout)
-    
-        self.mediaPlayer.setVideoOutput(videoWidget)
-        self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
-        self.mediaPlayer.positionChanged.connect(self.positionChanged)
-        self.mediaPlayer.durationChanged.connect(self.durationChanged)
-        self.mediaPlayer.error.connect(self.handleError)
-
-        self.playButton.setEnabled(True)
-
-    def play(self):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.mediaPlayer.pause()
-        else:
-            self.mediaPlayer.play()
- 
-    def mediaStateChanged(self, state):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.playButton.setIcon(
-                    QApplication.style().standardIcon(QStyle.SP_MediaPause))
-        else:
-            self.playButton.setIcon(
-                    QApplication.style().standardIcon(QStyle.SP_MediaPlay))
- 
-    def positionChanged(self, position):
-        self.positionSlider.setValue(position)
- 
-    def durationChanged(self, duration):
-        self.positionSlider.setRange(0, duration)
- 
-    def setPosition(self, position):
-        self.mediaPlayer.setPosition(position)
- 
-    def handleError(self):
-        self.playButton.setEnabled(False)
-        self.error.setText("Error: " + self.mediaPlayer.errorString())
-
