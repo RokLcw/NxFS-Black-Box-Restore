@@ -1,9 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow, QWidget, QPushButton, QApplication, QLabel, QStyle, QHBoxLayout, QSizePolicy, QSlider, QVBoxLayout
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtMultimediaWidgets import QVideoWidget
 import os
 from functools import partial
 import itertools
@@ -290,7 +287,7 @@ class Analysis_main():
 
         input_data = QtCore.QFileInfo(item.text()).fileName()
 
-        Path("View/image(fake)/result/" + input_data).mkdir(parents=True, exist_ok=True)
+        Path("View/image(fake)/result/" + input_data).mkdir()
         for line in self.open_file():
             string += line.replace("   ", " ")
 
