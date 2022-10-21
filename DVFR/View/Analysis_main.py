@@ -287,7 +287,7 @@ class Analysis_main():
 
         input_data = QtCore.QFileInfo(item.text()).fileName()
 
-        Path("View/image(fake)/result/" + input_data).mkdir()
+        Path("View/image(fake)/result/" + input_data).mkdir(parents=True, exist_ok=True)    # 약간의 버그가 존재하게 됨. (영상 보여주는게 누적?)
         for line in self.open_file():
             string += line.replace("   ", " ")
 
