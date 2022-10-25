@@ -7,14 +7,15 @@ class hexdump:
         last_bs, last_line = None, None
         for i in range(0, len(self.buf), 16):
             bs = bytearray(self.buf[i : i + 16])
-            line = "{:08X}  {:23}  {:23}  |{:16}|".format(
+            line = "{:08X} {:23} {} {:23} |{:16}".format(
                 self.off + i,
                 " ".join(("{:02X}".format(x) for x in bs[:8])),
+                " ".join(""),
                 " ".join(("{:02X}".format(x) for x in bs[8:])),
                 "".join((chr(x) if 32 <= x < 127 else "." for x in bs)),
             )
-            if bs == last_bs:
-                line = "*"
+            #if bs == last_bs:
+            #    line = "*"
             if bs != last_bs or line != last_line:
                 yield line
             last_bs, last_line = bs, line
