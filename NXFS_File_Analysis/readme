@@ -4,4 +4,7 @@
 ~20221016
 2. made file metadata parsing function
 
-(Now) making parsing page to display (assigned data) video lists & hex data .
+~20221025
+made parsing page to display hex data
+
+(Now) Analyzing NXFS filesystem 
