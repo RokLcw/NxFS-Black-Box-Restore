@@ -175,7 +175,8 @@ if __name__ == '__main__':
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = ['전방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['전방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
 
@@ -185,7 +186,8 @@ if __name__ == '__main__':
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_back.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = ['후방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['후방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = ['후방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
             
@@ -211,6 +213,8 @@ if __name__ == '__main__':
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
         
         # idx1 list에 있는 값들과 모두 일치할 경우
+        # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
+        # 하다가 다른거 있으면 -> 뻑나는거임
         if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
             print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
             unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
@@ -243,6 +247,28 @@ if __name__ == '__main__':
     with open("./result/back.dat", "wb") as frame:
         frame.write(bytes(h264_back))
         # print(h264_back)
+
+    h264_frame.to_csv('./result/offset_info.csv', encoding='CP949')
+
+    print(h264_frame.iloc[0, 1])
+
+    cnt_front = 0
+    cnt_back = 0
+    for i in range (0,len(h264_frame)):
+        print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
+        print("\n")
+
+        if '전방' in h264_frame.iloc[i, 0]:
+            save_path = f"./result/frame/전방/"
+            cnt_front += 1
+            with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
+                frame.write(bytes(data[int(h264_frame.iloc[i, 1]):int(h264_frame.iloc[i, 2]+1)]))
+                
+        if '후방' in h264_frame.iloc[i, 0]:
+            save_path = f"./result/frame/후방/"
+            cnt_back += 1
+            with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
+                frame.write(bytes(data[int(h264_frame.iloc[i, 1]):int(h264_frame.iloc[i, 2]+1)]))
     
     # with open("./result/unknown.dat", "wb") as frame:
     #     frame.write(bytes(unknown_movi_list_data))
