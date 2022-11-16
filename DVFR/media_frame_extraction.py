@@ -95,7 +95,7 @@ if __name__ == '__main__':
         # print(check_list_size+20)
         # print(junk_size)
         Junk = data[check_list_size + 20:((check_list_size + 20) + 8) + junk_size]
-        print("Junk: ", Junk)
+        # print("Junk: ", Junk)
         # print(Junk)
         # print(int.from_bytes(data[check_list_size + 24:check_list_size + 28], 'little'))
         junk_size += 8  # junk가 있는경우 movi start offset을 계산하기 위함.
@@ -114,13 +114,27 @@ if __name__ == '__main__':
     # print(movi_list_start_offset+movi_list_size)
 
     # -------------------idx-------------------
+    movi_list_magic_number = []
     idx1_start_offset = 20 + hdrl_size + 8 + junk_size + movi_list_size
+    idx1_list_pointer = idx1_start_offset + 8
     print("\nidx1 start offset: ", hex(idx1_start_offset))
     idx1_size = int.from_bytes(data[idx1_start_offset+4:idx1_start_offset+8], 'little')
-    # print(idx1_size)
+    # print("idx1_size: ", idx1_size)
     idx = data[idx1_start_offset:idx1_start_offset+8+idx1_size]
+    # print("idx1_list_pointer: ", hex(idx1_list_pointer))
+    # print(hex((idx1_start_offset + 8) + idx1_size))
+    while((idx1_start_offset + 8) + idx1_size != idx1_list_pointer):
+        # print(data[idx1_list_pointer:idx1_list_pointer+4])
+        # print(hex(idx1_list_pointer))
+        movi_list_magic_number.append(data[idx1_list_pointer:idx1_list_pointer+4])
+        # print(data[idx1_list_pointer:idx1_list_pointer+4])
+        idx1_list_pointer += (12 + 4)   # 14: 간격, 4: magic number
+        # print("idx1_list_pointer: ", hex(idx1_list_pointer))
+    # print(movi_list_magic_number)
+    movi_list_magic_number.append("\x00\x00\x00\x00")
+    print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
+    print("idx1_list_pointer: ", hex(idx1_list_pointer))
     # print(idx)
-
     # -------------------movi list frame extraction-------------------
 
     # -------------------movi list header-------------------
@@ -149,49 +163,53 @@ if __name__ == '__main__':
     while(movi_list_pointer != idx1_start_offset):
         # if(cnt == 4):
         #     break
-
-        time.sleep(0.5)
         
         if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
             print("\n전방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
+
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):
             print("\n후방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
+
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
             print("\n텍스트")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
+
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
             print("\n음성")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
+
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x73\x74' or data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x73\x74'):
             print("\n뭔데 이거~")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
+            
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x77\x62'):
             print("\n뭔데 이거~2")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            movi_list_pointer += (frame_size + 8)
-            print("movi_list_pointer: ", hex(movi_list_pointer))
-        
-        if(movi_list_pointer > idx1_start_offset):
-            print("Last movi_list_pointer: ", movi_list_pointer)
+            
+        if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
+            print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
+            unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
+            unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
+            print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
             break
+
+        # if(movi_list_pointer > idx1_start_offset):
+        #     print("Last movi_list_pointer: ", hex(movi_list_pointer))
+        #     break
+        
+        print("movi_list_magic_number: ", movi_list_magic_number[cnt])
+        print("now: ", data[movi_list_pointer:movi_list_pointer+4])
+
+        movi_list_pointer += (frame_size + 8)
+        print("movi_list_pointer: ", hex(movi_list_pointer))
 
             
         # if(data)
