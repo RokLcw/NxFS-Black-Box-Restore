@@ -158,21 +158,26 @@ if __name__ == '__main__':
     movi_list_pointer = media_start_offset
     print("\nmedia_start_offset: ", hex(media_start_offset))
 
-    h264_frame = []
     cnt = 0
+    h264_front = []
+    h264_back = []
     while(movi_list_pointer != idx1_start_offset):
-        # if(cnt == 4):
+        # if(cnt == 2):
         #     break
         
         if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
             print("\n전방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+            h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):
             print("\n후방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # h264_back.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+            h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
             print("\n텍스트")
@@ -193,7 +198,8 @@ if __name__ == '__main__':
             print("\n뭔데 이거~2")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
-            
+        
+        # idx1 list에 있는 값들과 모두 일치할 경우
         if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
             print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
             unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
@@ -215,6 +221,16 @@ if __name__ == '__main__':
         # if(data)
         # h264_frame.append()
         cnt+=1
+    
+    print(type(h264_front))
+
+    with open("./front.dat", "wb") as frame:
+        frame.write(bytes(h264_front))
+        # print(h264_front)
+
+    with open("./back.dat", "wb") as frame:
+        frame.write(bytes(h264_back))
+        # print(h264_back)
 
     end_time = time.time()
     print("\nrun time: ", end_time - start_time)
