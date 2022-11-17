@@ -175,8 +175,8 @@ if __name__ == '__main__':
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            # append_dataframe = ['전방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
-            append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+            append_dataframe = ['00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
 
@@ -186,8 +186,8 @@ if __name__ == '__main__':
             print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_back.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            # append_dataframe = ['후방', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
-            append_dataframe = ['후방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+            append_dataframe = ['01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
             
@@ -255,20 +255,32 @@ if __name__ == '__main__':
     cnt_front = 0
     cnt_back = 0
     for i in range (0,len(h264_frame)):
-        print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
-        print("\n")
+        # print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
+        # print("\n")
 
-        if '전방' in h264_frame.iloc[i, 0]:
+        if '00' in h264_frame.iloc[i, 0]:
             save_path = f"./result/frame/전방/"
             cnt_front += 1
             with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
-                frame.write(bytes(data[int(h264_frame.iloc[i, 1]):int(h264_frame.iloc[i, 2]+1)]))
+                start = h264_frame.iloc[i, 1]
+                # print(start[2:])
+                # print(type(start))
+                end = h264_frame.iloc[i, 2]
+                # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+                frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
                 
-        if '후방' in h264_frame.iloc[i, 0]:
+        if '01' in h264_frame.iloc[i, 0]:
             save_path = f"./result/frame/후방/"
             cnt_back += 1
             with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
-                frame.write(bytes(data[int(h264_frame.iloc[i, 1]):int(h264_frame.iloc[i, 2]+1)]))
+                start = h264_frame.iloc[i, 1]
+                # print(start[2:])
+                end = h264_frame.iloc[i, 2]
+                # print(end[2:])
+                # print(int(end[2:], 16))
+                # print(int(start[2:], 16), int(end[2:], 16))
+                # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+                frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
     
     # with open("./result/unknown.dat", "wb") as frame:
     #     frame.write(bytes(unknown_movi_list_data))
