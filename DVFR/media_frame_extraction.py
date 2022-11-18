@@ -161,56 +161,86 @@ if __name__ == '__main__':
     print("\nmedia_start_offset: ", hex(media_start_offset))
 
     cnt = 0
+    Frame_index = 0
     h264_front = []
     h264_back = []
     h264_frame = pd.DataFrame(columns=['Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
+    h264_frame_pframe = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_offset', "End_Offset", "Size"])
 
     while(movi_list_pointer != idx1_start_offset):
-        # if(cnt == 4):
-        #     break
+        # print(data[movi_list_pointer+8:movi_list_pointer+13])
+
+        if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41' and cnt > 2):
+            # print(hex(frame_size))
+            # print(hex(movi_list_pointer))
+            # print(hex(movi_list_pointer-frame_size))
+            # print(data[movi_list_pointer-frame_size:(movi_list_pointer-frame_size) + 5])
+            if(data[movi_list_pointer-frame_size:(movi_list_pointer-frame_size) + 5] == b'\x00\x00\x00\x01\x67'):
+                Frame_index += 1
+
+        # Pframe
+        if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+8:movi_list_pointer+13])
+            if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
+                h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
+                h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+
+            movi_list_pointer += (frame_size + 8)
+            cnt += 1
+            # print(data[movi_list_pointer+8:movi_list_pointer+13])
+            # time.sleep(0.5)
+
+            continue
         
         if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
-            print("\n전방")
+            # print("\n전방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
             append_dataframe = ['00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
-            print(append_dataframe)
+            # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):
-            print("\n후방")
+            # print("\n후방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_back.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
             append_dataframe = ['01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
-            print(append_dataframe)
+            # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
-            
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
-            print("\n텍스트")
+            # print("\n텍스트")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
-            print("\n음성")
+            # print("\n음성")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x73\x74' or data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x73\x74'): # 03st, 04st
-            print("\n뭔데 이거~")
+            # print("\n뭔데 이거~")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x77\x62'):
-            print("\n뭔데 이거~2")
+            # print("\n뭔데 이거~2")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
-            print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
         
         # idx1 list에 있는 값들과 모두 일치할 경우
         # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
@@ -226,20 +256,22 @@ if __name__ == '__main__':
         #     print("Last movi_list_pointer: ", hex(movi_list_pointer))
         #     break
         
-        print("movi_list_magic_number: ", movi_list_magic_number[cnt])
-        print("now: ", data[movi_list_pointer:movi_list_pointer+4])
+        # print("movi_list_magic_number: ", movi_list_magic_number[cnt])
+        # print("now: ", data[movi_list_pointer:movi_list_pointer+4])
 
         movi_list_pointer += (frame_size + 8)
-        print("movi_list_pointer: ", hex(movi_list_pointer))
+        # print("movi_list_pointer: ", hex(movi_list_pointer))
 
-            
+        
         # if(data)
         # h264_frame.append()
         cnt+=1
     
     print(type(h264_front))
     print(h264_frame)
+    print(h264_frame_pframe)
 
+    # 전방, 후방 영상 추출
     with open("./result/front.dat", "wb") as frame:
         frame.write(bytes(h264_front))
         # print(h264_front)
@@ -248,10 +280,10 @@ if __name__ == '__main__':
         frame.write(bytes(h264_back))
         # print(h264_back)
 
+    # offset csv 저장
     h264_frame.to_csv('./result/offset_info.csv', encoding='CP949')
 
-    print(h264_frame.iloc[0, 1])
-
+    # frame 단위로 저장
     cnt_front = 0
     cnt_back = 0
     for i in range (0,len(h264_frame)):
@@ -286,6 +318,17 @@ if __name__ == '__main__':
     #     frame.write(bytes(unknown_movi_list_data))
     #     # print(h264_back)
 
+    # sps, pps, iframe, pframe 파싱
+    frame_index = int(input("원하는 프레임 정보: "))
+    h264_frame_Detail = pd.DataFrame(columns=['Frame', 'Start_Offset', 'End_Offset', 'Size']) # sps, pps, iframe, pframe, size
+
+    start = h264_frame.iloc[frame_index, 1]
+    end = h264_frame.iloc[frame_index, 2]
+
+    print(bytes(data[int(start[2:], 16):int(start[2:], 16)+5]))
+
+    # if(bytes(data[int(start[2:], 16):int(start[2:], 16)+5]) == b'\x00\x00\x00\x01\x67'):
+        
     end_time = time.time()
     print("\nrun time: ", end_time - start_time)
     print(f"memory use: {memory_usage()[0]:.2f} MiB")
