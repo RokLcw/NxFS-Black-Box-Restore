@@ -319,13 +319,13 @@ if __name__ == '__main__':
     #     # print(h264_back)
 
     # sps, pps, iframe, pframe 파싱
-    frame_index = int(input("원하는 프레임 정보: "))
-    h264_frame_Detail = pd.DataFrame(columns=['Frame', 'Start_Offset', 'End_Offset', 'Size']) # sps, pps, iframe, pframe, size
+    # frame_index = int(input("원하는 프레임 정보: "))
+    # h264_frame_Detail = pd.DataFrame(columns=['Frame', 'Start_Offset', 'End_Offset', 'Size']) # sps, pps, iframe, pframe, size
 
-    start = h264_frame.iloc[frame_index, 1]
-    end = h264_frame.iloc[frame_index, 2]
+    # start = h264_frame.iloc[frame_index, 1]
+    # end = h264_frame.iloc[frame_index, 2]
 
-    print(bytes(data[int(start[2:], 16):int(start[2:], 16)+5]))
+    # print(bytes(data[int(start[2:], 16):int(start[2:], 16)+5]))
 
     # if(bytes(data[int(start[2:], 16):int(start[2:], 16)+5]) == b'\x00\x00\x00\x01\x67'):
         
