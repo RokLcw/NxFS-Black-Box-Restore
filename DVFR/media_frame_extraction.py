@@ -170,14 +170,6 @@ if __name__ == '__main__':
     while(movi_list_pointer != idx1_start_offset):
         # print(data[movi_list_pointer+8:movi_list_pointer+13])
 
-        if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41' and cnt > 2):
-            # print(hex(frame_size))
-            # print(hex(movi_list_pointer))
-            # print(hex(movi_list_pointer-frame_size))
-            # print(data[movi_list_pointer-frame_size:(movi_list_pointer-frame_size) + 5])
-            if(data[movi_list_pointer-frame_size:(movi_list_pointer-frame_size) + 5] == b'\x00\x00\x00\x01\x67'):
-                Frame_index += 1
-
         # Pframe
         if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
@@ -192,6 +184,15 @@ if __name__ == '__main__':
                 append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                 h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
+            # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
+            pframe_index_check = h264_frame.iloc[len(h264_frame)-1, 1]
+            pframe_index_check2 = h264_frame_pframe.iloc[len(h264_frame_pframe)-2, 3]
+            # print(int(pframe_index_check[2:], 16))
+            # print(movi_list_pointer+8)
+            # print(int(pframe_index_check[2:], 16))
+            # print(int(pframe_index_check2[2:], 16))
+            if(int(pframe_index_check[2:], 16) > int(pframe_index_check2[2:], 16)):
+                Frame_index += 1
 
             movi_list_pointer += (frame_size + 8)
             cnt += 1
@@ -200,6 +201,7 @@ if __name__ == '__main__':
 
             continue
         
+        # SPS, PPS, Iframe
         if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
             # print("\n전방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
@@ -266,8 +268,11 @@ if __name__ == '__main__':
         # if(data)
         # h264_frame.append()
         cnt+=1
+
+    # print(len(h264_frame))
+    # print(h264_frame.iloc[len(h264_frame)-1, 1])
     
-    print(type(h264_front))
+    # print(type(h264_front))
     print(h264_frame)
     print(h264_frame_pframe)
 
@@ -282,6 +287,7 @@ if __name__ == '__main__':
 
     # offset csv 저장
     h264_frame.to_csv('./result/offset_info.csv', encoding='CP949')
+    h264_frame_pframe.to_csv('./result/offset_info_pframe.csv', encoding='CP949')
 
     # frame 단위로 저장
     cnt_front = 0
