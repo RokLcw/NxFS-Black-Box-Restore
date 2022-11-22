@@ -164,14 +164,27 @@ if __name__ == '__main__':
     Frame_index = 0
     h264_front = []
     h264_back = []
-    h264_frame = pd.DataFrame(columns=['Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
+    h264_frame = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
     h264_frame_pframe = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_offset', "End_Offset", "Size"])
 
-    while(movi_list_pointer != idx1_start_offset):
-        # print(data[movi_list_pointer+8:movi_list_pointer+13])
+    h264_frame.loc[len(h264_frame)] = ['0x00','0x00','0x00','0x00','0x00']
+    h264_frame_pframe.loc[len(h264_frame_pframe)] = ['0x00','0x00','0x00','0x00','0x00']
+    # print(h264_frame_pframe)
 
+
+    while(movi_list_pointer != idx1_start_offset):
         # Pframe
         if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
+            # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
+            pframe_index_check_sps = h264_frame.iloc[len(h264_frame)-1, 2]
+            pframe_index_check_pframe = h264_frame_pframe.iloc[len(h264_frame_pframe)-1, 3]
+            # print(int(pframe_index_check[2:], 16))
+            # print(movi_list_pointer+8)
+            # print(int(pframe_index_check[2:], 16))
+            # print(int(pframe_index_check2[2:], 16))
+            if(int(pframe_index_check_sps[2:], 16) > int(pframe_index_check_pframe[2:], 16)):
+                Frame_index += 1
+
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+8:movi_list_pointer+13])
             if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
@@ -184,15 +197,6 @@ if __name__ == '__main__':
                 append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                 h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
-            # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
-            pframe_index_check = h264_frame.iloc[len(h264_frame)-1, 1]
-            pframe_index_check2 = h264_frame_pframe.iloc[len(h264_frame_pframe)-2, 3]
-            # print(int(pframe_index_check[2:], 16))
-            # print(movi_list_pointer+8)
-            # print(int(pframe_index_check[2:], 16))
-            # print(int(pframe_index_check2[2:], 16))
-            if(int(pframe_index_check[2:], 16) > int(pframe_index_check2[2:], 16)):
-                Frame_index += 1
 
             movi_list_pointer += (frame_size + 8)
             cnt += 1
@@ -208,7 +212,7 @@ if __name__ == '__main__':
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = ['00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = [Frame_index+1, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
@@ -219,7 +223,7 @@ if __name__ == '__main__':
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_back.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = ['01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = [Frame_index+1, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
@@ -273,6 +277,10 @@ if __name__ == '__main__':
     # print(h264_frame.iloc[len(h264_frame)-1, 1])
     
     # print(type(h264_front))
+
+    h264_frame = h264_frame.drop([0], axis=0)
+    h264_frame_pframe = h264_frame_pframe.drop([0], axis=0)
+
     print(h264_frame)
     print(h264_frame_pframe)
 
@@ -292,28 +300,29 @@ if __name__ == '__main__':
     # frame 단위로 저장
     cnt_front = 0
     cnt_back = 0
+
     for i in range (0,len(h264_frame)):
         # print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
         # print("\n")
 
-        if '00' in h264_frame.iloc[i, 0]:
+        if '00' in h264_frame.iloc[i, 1]:
             save_path = f"./result/frame/전방/"
             cnt_front += 1
             with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
-                start = h264_frame.iloc[i, 1]
+                start = h264_frame.iloc[i, 2]
                 # print(start[2:])
                 # print(type(start))
-                end = h264_frame.iloc[i, 2]
+                end = h264_frame.iloc[i, 3]
                 # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
                 frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
                 
-        if '01' in h264_frame.iloc[i, 0]:
+        if '01' in h264_frame.iloc[i, 1]:
             save_path = f"./result/frame/후방/"
             cnt_back += 1
             with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
-                start = h264_frame.iloc[i, 1]
+                start = h264_frame.iloc[i, 2]
                 # print(start[2:])
-                end = h264_frame.iloc[i, 2]
+                end = h264_frame.iloc[i, 3]
                 # print(end[2:])
                 # print(int(end[2:], 16))
                 # print(int(start[2:], 16), int(end[2:], 16))
