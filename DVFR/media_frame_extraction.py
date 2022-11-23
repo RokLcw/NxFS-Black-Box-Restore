@@ -173,7 +173,7 @@ if __name__ == '__main__':
     # print(h264_frame_pframe)
 
 
-    while(movi_list_pointer != idx1_start_offset):
+    while(1):
         # Pframe
         if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
             # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
@@ -323,7 +323,10 @@ if __name__ == '__main__':
             print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
             unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
             unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
-            print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
+            if(movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size-1 or movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size):
+                print("\nunknown_movi_list none")
+            else:
+                print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
             break
 
         # if(movi_list_pointer > idx1_start_offset):
@@ -404,9 +407,9 @@ if __name__ == '__main__':
                 # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
                 frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
     
-    # with open("./result/unknown.dat", "wb") as frame:
-    #     frame.write(bytes(unknown_movi_list_data))
-    #     # print(h264_back)
+    with open(f"./result/{save_folder_name}/unknown.dat", "wb") as frame:
+        frame.write(bytes(unknown_movi_list_data))
+        # print(h264_back)
 
     # sps, pps, iframe, pframe 파싱
     # frame_index = int(input("원하는 프레임 정보: "))
