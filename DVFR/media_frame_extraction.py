@@ -3,6 +3,7 @@ import os
 import time
 import pandas as pd
 from datetime import datetime
+import ffmpeg
 from memory_profiler import memory_usage
 from math import ceil 
 
@@ -367,10 +368,42 @@ if __name__ == '__main__':
         frame.write(bytes(h264_front))
         # print(h264_front)
 
+    about_media = (
+        ffmpeg.probe(f"./result/{save_folder_name}/front.dat")
+    )
+
+    # print(about_media)
+    # print(type(about_media))
+    # print(about_media['streams'][0]['time_base'])
+    time_base = about_media['streams'][0]['time_base']
+
+    save_media = (
+        ffmpeg
+        .input(f"./result/{save_folder_name}/front.dat")
+        .output(f"./result/{save_folder_name}/front.avi", video_bitrate=int(time_base[2:])/1000)
+        .run()
+    )
+
     with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
         frame.write(bytes(h264_back))
         # print(h264_back)
 
+    about_media = (
+        ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
+    )
+
+    # print(about_media)
+    # print(type(about_media))
+    # print(about_media['streams'][0]['time_base'])
+    time_base = about_media['streams'][0]['time_base']
+
+    save_media = (
+        ffmpeg
+        .input(f"./result/{save_folder_name}/back.dat")
+        .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
+        .run()
+    )
+        
     # offset csv 저장
     h264_frame.to_csv(f'./result/{save_folder_name}/offset_info.csv', encoding='CP949')
     h264_frame_pframe.to_csv(f'./result/{save_folder_name}/offset_info_pframe.csv', encoding='CP949')
@@ -393,6 +426,13 @@ if __name__ == '__main__':
                 end = h264_frame.iloc[i, 3]
                 # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
                 frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+
+                (
+                    ffmpeg
+                    .input(f"{save_path}/frame{cnt_back}.dat")
+                    .output(f"{save_path}/frame{cnt_back}.jpg")
+                    .run()
+                )
                 
         if '01' in h264_frame.iloc[i, 1]:
             save_path = f"./result/{save_folder_name}/frame/후방/"
@@ -406,6 +446,14 @@ if __name__ == '__main__':
                 # print(int(start[2:], 16), int(end[2:], 16))
                 # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
                 frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+
+                (
+                    ffmpeg
+                    .input(f"{save_path}/frame{cnt_back}.dat")
+                    .output(f"{save_path}/frame{cnt_back}.jpg")
+                    .run()
+                )
+                
     
     with open(f"./result/{save_folder_name}/unknown.dat", "wb") as frame:
         frame.write(bytes(unknown_movi_list_data))
