@@ -429,8 +429,8 @@ if __name__ == '__main__':
 
                 (
                     ffmpeg
-                    .input(f"{save_path}/frame{cnt_back}.dat")
-                    .output(f"{save_path}/frame{cnt_back}.jpg")
+                    .input(f"{save_path}/frame{cnt_front}.dat")
+                    .output(f"{save_path}/frame{cnt_front}.jpg")
                     .run()
                 )
                 
