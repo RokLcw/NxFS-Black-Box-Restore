@@ -20,6 +20,7 @@ def size_return(bytes):
     return size_result
 
 if __name__ == '__main__':
+    check = 1   # 0: 손상, 1: 미손상
     start_time = time.time()
 
     file_size = os.path.getsize(sys.argv[1])
@@ -38,87 +39,93 @@ if __name__ == '__main__':
 
     if(data[0:4] != b"\x52\x49\x46\x46"):
         print("No Signature(Magic Number)")
+        movi_list_start_offset = int(data.find(b"\x6D\x6F\x76\x69")) - 8
+        movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
+        movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
+        print(hex(movi_list_start_offset))
+        print(hex(movi_list_size))
+        check = 0
+    else:
+        # -------------------hdrl-------------------
+        # print(data[16:20])
+        # print(int.from_bytes(data[16:20], 'little'))
 
-    # -------------------hdrl-------------------
-    # print(data[16:20])
-    # print(int.from_bytes(data[16:20], 'little'))
+        hdrl_size = int.from_bytes(data[16:20], 'little')
+        hdrl = data[12:20 + hdrl_size]
+        # print(hdrl)
 
-    hdrl_size = int.from_bytes(data[16:20], 'little')
-    hdrl = data[12:20 + hdrl_size]
-    # print(hdrl)
+        # -------------------avih-------------------
+        # print(hdrl[16:20])
+        avih_size = int.from_bytes(hdrl[16:20], 'little')
+        # print(avih_size)
+        avih = hdrl[12:16 + avih_size]
 
-    # -------------------avih-------------------
-    # print(hdrl[16:20])
-    avih_size = int.from_bytes(hdrl[16:20], 'little')
-    # print(avih_size)
-    avih = hdrl[12:16 + avih_size]
+        # -------------------strl-------------------
+        strl_size = []
+        strl = []
+        strl_key = []
+        check_list_size = 20 + avih_size
+        # print(size)
+        cnt = 0
+        # print("hdrl_size: ", hdrl_size)
+        while(True):
+            # print(hdrl[size:size+4])
+            # print(hdrl[size+4:size+8])
+            # -------------------strl size-------------------
+            # print("List Size: ", int.from_bytes(hdrl[check_list_size+4:check_list_size+8], 'little'))
+            strl_size.append(int.from_bytes(hdrl[check_list_size+4:check_list_size+8], 'little'))
+            # print("누적 size: ", check_list_size - 8)
 
-    # -------------------strl-------------------
-    strl_size = []
-    strl = []
-    strl_key = []
-    check_list_size = 20 + avih_size
-    # print(size)
-    cnt = 0
-    # print("hdrl_size: ", hdrl_size)
-    while(True):
-        # print(hdrl[size:size+4])
-        # print(hdrl[size+4:size+8])
-        # -------------------strl size-------------------
-        # print("List Size: ", int.from_bytes(hdrl[check_list_size+4:check_list_size+8], 'little'))
-        strl_size.append(int.from_bytes(hdrl[check_list_size+4:check_list_size+8], 'little'))
-        # print("누적 size: ", check_list_size - 8)
+            # -------------------strl input-------------------
+            strl.append(hdrl[check_list_size:check_list_size + 8 + strl_size[cnt]])
 
-        # -------------------strl input-------------------
-        strl.append(hdrl[check_list_size:check_list_size + 8 + strl_size[cnt]])
+            # -------------------strl key-------------------
+            strl_key.append(hdrl[check_list_size + 20:check_list_size + 24])
+            # strl.append()
+            check_list_size += (strl_size[cnt] + 8)
+            cnt += 1
 
-        # -------------------strl key-------------------
-        strl_key.append(hdrl[check_list_size + 20:check_list_size + 24])
-        # strl.append()
-        check_list_size += (strl_size[cnt] + 8)
-        cnt += 1
+            if ((hdrl_size) == check_list_size - 8):  # 마지막에 발생하는 +8을 제외시킴
+                break
 
-        if ((hdrl_size) == check_list_size - 8):  # 마지막에 발생하는 +8을 제외시킴
-            break
+        # print(strl_size)
+        # print(strl)
+        print("strl list: ", strl_key)
 
-    # print(strl_size)
-    # print(strl)
-    print("strl list: ", strl_key)
+        # -------------------Junk-------------------
+        check_list_size -= 8
+        Junk_Start_offset = 20 + hdrl_size
+        junk_size = 0
+        # print("Junk: ", data[Junk_Start_offset:Junk_Start_offset+4])
 
-    # -------------------Junk-------------------
-    check_list_size -= 8
-    Junk_Start_offset = 20 + hdrl_size
-    junk_size = 0
-    # print("Junk: ", data[Junk_Start_offset:Junk_Start_offset+4])
+        if(data[Junk_Start_offset:Junk_Start_offset+4] == b"\x4A\x55\x4E\x4B"):
+            print("Junk start offset: ", hex(Junk_Start_offset))
+            junk_size = int.from_bytes(data[check_list_size + 24:check_list_size + 28], 'little')
+            print("Junk Size: ", hex(junk_size))
+            # print(check_list_size+20)
+            # print(junk_size)
+            Junk = data[check_list_size + 20:((check_list_size + 20) + 8) + junk_size]
+            # print("Junk: ", Junk)
+            # print(Junk)
+            # print(int.from_bytes(data[check_list_size + 24:check_list_size + 28], 'little'))
+            junk_size += 8  # junk가 있는경우 movi start offset을 계산하기 위함.
+            print("Junk Size: ", hex(junk_size))
 
-    if(data[Junk_Start_offset:Junk_Start_offset+4] == b"\x4A\x55\x4E\x4B"):
-        print("Junk start offset: ", hex(Junk_Start_offset))
-        junk_size = int.from_bytes(data[check_list_size + 24:check_list_size + 28], 'little')
-        print("Junk Size: ", hex(junk_size))
-        # print(check_list_size+20)
-        # print(junk_size)
-        Junk = data[check_list_size + 20:((check_list_size + 20) + 8) + junk_size]
-        # print("Junk: ", Junk)
-        # print(Junk)
-        # print(int.from_bytes(data[check_list_size + 24:check_list_size + 28], 'little'))
-        junk_size += 8  # junk가 있는경우 movi start offset을 계산하기 위함.
-        print("Junk Size: ", hex(junk_size))
+        # -------------------movi list -------------------
+        movi_list_start_offset = 20 + hdrl_size + junk_size
+        print("movi list start offset: ", hex(movi_list_start_offset))
+        movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
+        # print(movi_list_size)
+        movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
+        
+        # with open("movi", "ab") as f:
+        #     f.write(movi)
 
-    # -------------------movi list -------------------
-    movi_list_start_offset = 20 + hdrl_size + junk_size
-    print("movi list start offset: ", hex(movi_list_start_offset))
-    movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
-    # print(movi_list_size)
-    movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
-    
-    # with open("movi", "ab") as f:
-    #     f.write(movi)
-
-    # print(movi_list_start_offset+movi_list_size)
+        # print(movi_list_start_offset+movi_list_size)
 
     # -------------------idx-------------------
+    idx1_start_offset = movi_list_start_offset+8+movi_list_size
     movi_list_magic_number = []
-    idx1_start_offset = 20 + hdrl_size + 8 + junk_size + movi_list_size
     idx1_list_pointer = idx1_start_offset + 8
     print("\nidx1 start offset: ", hex(idx1_start_offset))
     idx1_size = int.from_bytes(data[idx1_start_offset+4:idx1_start_offset+8], 'little')
@@ -138,6 +145,7 @@ if __name__ == '__main__':
     print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
     print("idx1_list_pointer: ", hex(idx1_list_pointer))
     # print(idx)
+        
     # -------------------movi list frame extraction-------------------
 
     # -------------------movi list header-------------------
@@ -320,15 +328,20 @@ if __name__ == '__main__':
         # idx1 list에 있는 값들과 모두 일치할 경우
         # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
         # 하다가 다른거 있으면 -> 뻑나는거임
-        if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
-            print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
-            unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
-            unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
-            if(movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size-1 or movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size):
-                print("\nunknown_movi_list none")
-            else:
-                print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
-            break
+        if(check == 0):
+            if(movi_list_pointer >= idx1_start_offset):
+                break
+            
+        else:
+            if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
+                print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
+                unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
+                unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
+                if(movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size-1 or movi_list_pointer == movi_list_pointer + unknown_movi_list_data_size):
+                    print("\nunknown_movi_list none")
+                else:
+                    print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
+                break
 
         # if(movi_list_pointer > idx1_start_offset):
         #     print("Last movi_list_pointer: ", hex(movi_list_pointer))
