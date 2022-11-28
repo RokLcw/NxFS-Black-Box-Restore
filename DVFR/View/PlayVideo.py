@@ -1,4 +1,3 @@
-from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QWidget, QPushButton, QApplication, QLabel, QStyle, QHBoxLayout, QSizePolicy, QSlider, QVBoxLayout
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
