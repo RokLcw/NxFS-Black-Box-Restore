@@ -37,7 +37,9 @@ if __name__ == '__main__':
     # with open("result.avi", "ab") as f:
     #     f.write(data)
 
+    # 손상 유무 판단
     if(data[0:4] != b"\x52\x49\x46\x46"):
+        # 헤더, idx1 값만 날아간 경우
         print("No Signature(Magic Number)")
         movi_list_start_offset = int(data.find(b"\x6D\x6F\x76\x69")) - 8
         movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
@@ -142,7 +144,7 @@ if __name__ == '__main__':
         # print("idx1_list_pointer: ", hex(idx1_list_pointer))
     # print(movi_list_magic_number)
     movi_list_magic_number.append("\x00\x00\x00\x00")
-    print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
+    # print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
     print("idx1_list_pointer: ", hex(idx1_list_pointer))
     # print(idx)
         
@@ -169,6 +171,9 @@ if __name__ == '__main__':
     media_start_offset = movi_list_start_offset + movi_list_head_len
     movi_list_pointer = media_start_offset
     print("\nmedia_start_offset: ", hex(media_start_offset))
+
+    # -------------------About binary-------------------
+    # about_binary = pd.DataFrame(columns=[''])
 
     cnt = 0
     Frame_index = 0
