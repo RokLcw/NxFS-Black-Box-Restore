@@ -4,11 +4,27 @@ from pandas import DataFrame
 import time
 from datetime import datetime
 import pickle
+import numpy as np
+
+import time # time 라이브러리 import
+start = time.time() # 시작
+
+global target
+global NxFS_start
+global NxFS_size
+global BytesPerSector
+global Cluster_size
 
 
 def convert_byte_to_int(bytes):
     '''byte를 리틀엔디안 형식으로 읽어서 int로 형변환하는 함수'''
     return int.from_bytes(bytes, 'little', signed=False)
+
+def is_mbr(mbr):
+    if mbr[-2] == 0x55 and mbr[-1] == 0xAA: # MBR의 Magic ID 판별
+        return True
+    else:
+        return False
 
 def is_NxFS(BR):
     if BR[3:7].decode('ascii') == 'NxFS':
@@ -22,24 +38,47 @@ def convert_datetime(unixtime):
     return date
 
 
+def df_to_sql(folder, file, filename):
+    '''데이터프레임을 SQL로 저장'''
+    import sqlite3
+    import pandas as pd
+    from pandas import Series, DataFrame
+
+
+    conn = sqlite3.connect("D:\\NxFS.db",isolation_level=None)
+    global c
+    c = conn.cursor()
+
+    s = folder
+    q = file
+    l = filename
+
+    A = s.to_sql('FOLDER',conn, if_exists='replace', index=False)
+    B = q.to_sql('FILE', conn, if_exists='replace', index=False)
+    C = l.to_sql('FILENAME', conn, if_exists='replace')
+
+
+
 
 target = 'D:/Urive.001'
 
 file = open(target, 'rb')
 
 
-
 '''BR 탐색 및 이동'''
-file.seek(470)
+file.seek(446)
+MBR = file.read(66)
+is_mbr(MBR)
 
-NxFS_start = convert_byte_to_int(file.read(4))   # NxFS 파티션 시작 위치 읽고 변환
-NxFS_size = convert_byte_to_int(file.read(4))   # NxFS 파티션 크기 읽고 변환
+info = MBR[16:32]
+
+NxFS_start = convert_byte_to_int(info[8:12])   # NxFS 파티션 시작 위치 읽고 변환
+NxFS_size = convert_byte_to_int(info[12:16])   # NxFS 파티션 크기 읽고 변환
+
 
 file.seek(NxFS_start * 512)   # NxFS 파티션 시작 위치로 이동
 
 NxFS_header = file.read(14)
-
-# print(NxFS_header)
 
 is_NxFS(NxFS_header)   # 헤더 확인
 
@@ -80,7 +119,7 @@ for i in range(4):
 
     file.seek(128, 1)
     
-folder_df = pd.DataFrame(folder, columns=['name','start index', 'end index', 'start offset', 'end offset'])
+folder_df = pd.DataFrame(folder, columns=['name','start index', 'end index', 'start_offset', 'end_offset'])
 
 print(folder_df)
 
@@ -158,16 +197,11 @@ while now < ((METADATA_AREA + 4688) * BytesPerSector):
 p = []   # 데이터 나누어 저장
 for j in range(0, len(idx), 4):
     p.append(idx[j:j+4])
-file_df = pd.DataFrame(p, columns = ['file_index','start offset','end offset','size'])
+file_df = pd.DataFrame(p, columns = ['file_index','start_offset','end_offset','size'])
 file_df = file_df.drop_duplicates()   # 중복 제거
-print(file_df)
 
-file_df_sorted = file_df.sort_values(by='start offset')   # start offset이 적은 순으로 정렬
-file_df_sorted = file_df_sorted.reset_index(drop=True)   # 인덱싱 초기화
-# file_df_sorted.to_csv('D:/file.csv', index=False)   # 데이터 프레임 csv 형태로 저장
-
-print(file_df_sorted)
-
+file_df_sorted = file_df.sort_values(by='start_offset')   # start offset이 적은 순으로 정렬
+file_df_sorted.set_index('file_index', inplace=True)   # 파일 인덱스 새로 지정 (loc 유용)
 
 
 # 파일 인덱스 탐색
@@ -179,7 +213,7 @@ i = 0
 
 while now < ((NxFS_start + 15647 + 37500) * BytesPerSector): 
     fName_list = []
-    now = file.tell()    
+    now = file.tell()
     file.seek(96 + 2, 1)
     fIndex = convert_byte_to_int(file.read(4))   # 폴더 인덱스 값 읽기
     file.seek(-102 , 1)
@@ -215,12 +249,20 @@ while now < ((NxFS_start + 15647 + 37500) * BytesPerSector):
             now = file.tell()
             
     now = file.tell()
-    print(now)
 
 
 df = pd.DataFrame(fName_list, columns=['name','folder_index', 'datetime'])   # 파일 이름 및 폴더 인덱스, 생성 시간
 
-filename_df = df.drop(df.tail(1).index)   # 마지막 값 삭제 (NaN)
+conditions = []
+vals = []
+for i in range(len(folder_df)):
+    conditions.append((df['folder_index'] >= folder_df['start index'][i]) & (df['folder_index'] <= folder_df['end index'][i]))
+    vals.append(folder_df['name'][i])
+
+df['folder'] = np.select(conditions, vals)
+
+filename_df = df.dropna()   # 결치값 삭제
+filename_df.set_index('folder_index', inplace=True) 
 
 print(filename_df)
 
@@ -228,7 +270,8 @@ print(filename_df)
 
 
 '''실제 데이터'''
-file.seek((NxFS_start + 128148) * BytesPerSector, 0)   # 실제 데이터 위치
+offset = (NxFS_start + 128148) * BytesPerSector
+file.seek(offset, 0)   # 실제 데이터 위치
 print('Data area(offset) :', file.tell())
 
 file.seek((NxFS_start + 128148) * BytesPerSector)
@@ -239,59 +282,185 @@ folder_id = convert_byte_to_int(header[2:6])
 file_id = convert_byte_to_int(header[10:14])
 
 
-# start offset 순서로 순차 추출하는 코드
-# 선택 추출하려면? -> file_index를 인자값으로 받기 (수정 필요)
 
-for i in range(2):
-    file.seek((NxFS_start + 128148) * BytesPerSector + file_df_sorted['start offset'][i], 0)
-    print(file.tell())
+file_df['folder_index'] = 0
+
+'''파일 메타데이터 저장'''
+for i in range(len(file_df_sorted)):
+    if file_df_sorted.iat[i, 1] == 0:
+        file.seek(offset + file_df_sorted.iat[i, 0], 0)   # start
+        omit = file_df_sorted.index[i]   # end offset이 0일 때
+        
+    else:
+        file.seek(offset + file_df_sorted.iat[i, 1], 0)   # end (overwrite 고려)
+    
+    now = file.tell()
+    
     header = file.read(14)
     file.seek(-14, 1)
+    
     folder_id = convert_byte_to_int(header[2:6])
     file_id = convert_byte_to_int(header[10:14])
+    
+    file.seek(offset + file_df_sorted.iat[i, 0], 0)   # start
+    now = file.tell()
 
-    d = file.read(file_df_sorted['size'][i])
+    file_df.loc[file_df['start_offset'] == now - offset, 'folder_index'] = folder_id
+    file_size = file_df_sorted.iat[i, -1]   # size
 
-    # 할당 영역 파일 추출
+
+    # 할당 영역 파일 데이터프레임 정리
     p = re.compile('\w+(?=[.])')   # 파일이름에서 확장자 이전만 출력
-    m = p.match(filename_df.loc[folder_id, 'name'])
+    m = p.match(filename_df.at[folder_id, 'name'])
     FILENAME = m.group()   # 파일 이름 불러오기
 
-    # 슬랙 공간 추출
-    file.seek((NxFS_start + 128148) * BytesPerSector + file_df_sorted['end offset'][i], 0)
+    # file_df.loc[file_df['folder_index'] == folder_id, 'file_name'] = FILENAME
+
+
+'''누락 데이터 추가하기'''
+print(file_df_sorted.loc[omit])
+
+file.seek(offset + file_df_sorted.at[omit, 'start_offset'])
+N = file.read(14)
+file.seek(-14, 1)
+folder_id = convert_byte_to_int(N[2:6])
+
+count = 0
+while True:
+    H = file.read(14)
+    file.seek(65522, 1)
+    if convert_byte_to_int(H[10:14]) != omit:
+        break
+    count += 1
+
+print("count =", count)
+
+    
+file_df.loc[file_df['folder_index'] == folder_id, 'end_offset'] = (count - 1) * 65536 + file_df_sorted.at[omit, 'start_offset']
+
+file.seek(offset + file_df_sorted.at[omit, 'end_offset'] + 6)
+s = convert_byte_to_int(file.read(4)) + 14   # 헤더 사이즈 포함
+
+file_df.loc[file_df['folder_index'] == folder_id, 'size'] = (count - 1) * 65536 + s
+
+
+file_df_sorted.to_csv('D:/sorted.csv')
+file_df.to_csv('D:/file_df.csv')
+
+
+a = pd.merge(file_df, filename_df, on='folder_index')
+# a = a.set_index('folder_index')
+
+# df_to_sql(folder_df, file_df, filename_df)
+
+
+print(a)
+
+# end offset이 0인 파일이 마지막이면 첫번째 파일은 덮어쓴 파일 (미할당)
+
+a.to_csv('D:/merge.csv')
+ 
+print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
+
+
+
+# 미할당 오프셋
+
+filex_list = []
+
+for i in range(len(file_df)):
+    file.seek((NxFS_start + 128148) * BytesPerSector + file_df.at[i, 'end_offset'], 0)   # end
     file.seek(6, 1)
     size = convert_byte_to_int(file.read(4))   # 사이즈 위치 읽기
     file.seek(4, 1)
     file.seek(size, 1)
+
+    SLACK_NAME = file.tell()
+    slack_size = Cluster_size - 14 - size
+    filex_list.append([SLACK_NAME])
+    filex_list[i].append(SLACK_NAME)
+    filex_list[i].append(SLACK_NAME + slack_size)
+    filex_list[i].append(slack_size)
+
+
+filex_df = pd.DataFrame(filex_list, columns=['name', 'start_offset', 'end_offset', 'size'])
+
+print(filex_df)
+
+file.close()
+
+
+
+
+def All_export_to_avi(df):
+    file = open(target, 'rb')
+
+    for i in range(len(df)):
+        file.seek((NxFS_start + 128148) * BytesPerSector + df.at[i, 'start_offset'], 0)   # start
+        now = file.tell()
+
+        if df.at[i, 'start_offset'] > df.at[i, 'end_offset']:
+            print(df.at[i, 'file_index'])
+            print(now)
+            
+            
+        
+        file_size = df.at[i, 'size']
+        d = file.read(file_size)
+
+        # 할당 영역 파일 추출
+        p = re.compile('\w+(?=[.])')   # 파일이름에서 확장자 이전만 출력
+        m = p.match(df.at[i, 'name'])
+        FILENAME = m.group()   # 파일 이름 불러오기
+
+        # 클러스터 단위로 저장
+        with open("data.pickle", 'wb') as fw:    
+            # pickle.dump(d, fw)
+            fw.write(d)
+        
+        D = open("data.pickle", "rb")
+
+        # 분할된 파일 합쳐서 추출
+        with open(FILENAME+'.avi', 'wb') as f:
+            n = 1
+            while True:
+                h = D.read(14)
+                s = convert_byte_to_int(h[6:8])
+                data = D.read(s)
+                if not data:
+                    break
+                f.write(data)
+                D.seek(0)
+                D.seek(65536 * n, 1)
+                n += 1
+
+        D.close()
+
+    file.close()
+
+
+def export_slack(df):
+    file = open(target, 'rb')
+
+    # 슬랙 공간 추출
+    file.seek((NxFS_start + 128148) * BytesPerSector + df.at[i, 'end_offset'], 0)   # end
+    file.seek(6, 1)
+    size = convert_byte_to_int(file.read(4))   # 사이즈 위치 읽기
+    file.seek(4, 1)
+    file.seek(size, 1)
+
     SLACK_NAME = file.tell()
     slack = file.read(Cluster_size - 14 - size)   # 헤더 값과 실제데이터를 뺀 부분 = 슬랙
 
     with open(str(SLACK_NAME), 'wb') as s:
         s.write(slack)
 
+    file.close()
 
-    # 클러스터 단위로 저장
-    with open("data.pickle", 'wb') as fw:    
-        # pickle.dump(d, fw)
-        fw.write(d)
-    
-    D = open("data.pickle", "rb")
+def unallocated(df):
+    print(df)
 
-    # 분할된 파일 합쳐서 추출
-    with open(FILENAME+'.avi', 'wb') as f:
-        n = 1
-        while True:
-            h = D.read(14)
-            s = convert_byte_to_int(h[6:8])
-            data = D.read(s)
-            if not data:
-                break
-            f.write(data)
-            D.seek(0)
-            D.seek(65536 * n, 1)
-            n += 1
 
-    D.close()
+# All_export_to_avi(a)
 
-    
-file.close()
+print(f"{time.time()-start:.4f} sec")
