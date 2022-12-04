@@ -272,7 +272,8 @@ print(filename_df)
 '''실제 데이터'''
 offset = (NxFS_start + 128148) * BytesPerSector
 file.seek(offset, 0)   # 실제 데이터 위치
-print('Data area(offset) :', file.tell())
+print('Data area offset :', file.tell())
+print('Data area offset :', hex(file.tell()))
 
 file.seek((NxFS_start + 128148) * BytesPerSector)
 
@@ -348,20 +349,28 @@ file_df_sorted.to_csv('D:/sorted.csv')
 file_df.to_csv('D:/file_df.csv')
 
 
-a = pd.merge(file_df, filename_df, on='folder_index')
+allocated = pd.merge(file_df, filename_df, on='folder_index')
 # a = a.set_index('folder_index')
 
 # df_to_sql(folder_df, file_df, filename_df)
 
 
-print(a)
+print(allocated)   # 할당 영역 확정
 
-# end offset이 0인 파일이 마지막이면 첫번째 파일은 덮어쓴 파일 (미할당)
-
-a.to_csv('D:/merge.csv')
+allocated.to_csv('D:/allowcated.csv')
  
 print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
 
+
+
+folder_name = folder_df['name'].tolist()
+
+for name in folder_name:
+    n = allocated.loc[allocated['folder'] == name]
+    if n.empty:
+        break
+    print(n.iloc[-1])   # 할당 마지막 데이터 가져오기
+        
 
 
 # 미할당 오프셋
