@@ -93,7 +93,6 @@ print('NxFS Partition size(sector/offset) : {} / {}'.format(NxFS_size, NxFS_size
 print('Cluster size(byte) :', Cluster_size)
 
 
-
 '''폴더명 탐색'''
 file.seek(NxFS_start * BytesPerSector)
 file.seek(1569 * BytesPerSector, 1)   # 1569 sector = 폴더명 저장 위치
@@ -111,15 +110,17 @@ for i in range(4):
         folder.append(re.findall("[A-Za-z]+", Name.decode('ascii')))
         folder[i].append(convert_byte_to_int(Dir_data[4:8]))   # 파일 인덱스 시작
         folder[i].append(convert_byte_to_int(Dir_data[8:12]))   # 파일 인덱스 끝
-        folder[i].append(convert_byte_to_int(Dir_data[14:18]) * SP * BytesPerSector)   # 실제 데이터에서 시작 클러스터 (오프셋)
-        folder[i].append(convert_byte_to_int(Dir_data[18:22]) * SP * BytesPerSector)   # 실제 데이터에서 끝 클러스터 (오프셋)
+        folder[i].append(convert_byte_to_int(Dir_data[14:18]))   # 실제 데이터에서 시작 클러스터
+        folder[i].append(convert_byte_to_int(Dir_data[18:22]))   # 실제 데이터에서 끝 클러스터
+        folder[i].append((convert_byte_to_int(Dir_data[14:18]) * SP + NxFS_start + 128148) * BytesPerSector)
+        folder[i].append((convert_byte_to_int(Dir_data[18:22]) * SP + NxFS_start + 128148) * BytesPerSector + Cluster_size)
     else:
         break   # 폴더명 위치에 값이 0일 경우 break
     
 
     file.seek(128, 1)
     
-folder_df = pd.DataFrame(folder, columns=['name','start index', 'end index', 'start_offset', 'end_offset'])
+folder_df = pd.DataFrame(folder, columns=['name','start_index', 'end_index', 'start_cluster_L', 'end_cluster_L', 'start_offset_P', 'end_offset_P'])
 
 print(folder_df)
 
@@ -152,8 +153,6 @@ while True:
         break        
 
 count -= 1
-
-print(count)
 
 METADATA_AREA = NxFS_start + 1582 + count
 
@@ -256,7 +255,7 @@ df = pd.DataFrame(fName_list, columns=['name','folder_index', 'datetime'])   # �
 conditions = []
 vals = []
 for i in range(len(folder_df)):
-    conditions.append((df['folder_index'] >= folder_df['start index'][i]) & (df['folder_index'] <= folder_df['end index'][i]))
+    conditions.append((df['folder_index'] >= folder_df['start_index'][i]) & (df['folder_index'] <= folder_df['end_index'][i]))
     vals.append(folder_df['name'][i])
 
 df['folder'] = np.select(conditions, vals)
@@ -349,15 +348,32 @@ file_df_sorted.to_csv('D:/sorted.csv')
 file_df.to_csv('D:/file_df.csv')
 
 
+
 allocated = pd.merge(file_df, filename_df, on='folder_index')
-# a = a.set_index('folder_index')
+allocated = allocated.sort_values(by='start_offset')
 
-# df_to_sql(folder_df, file_df, filename_df)
 
+# offset = []
+p_offset = []
+
+for o in allocated['start_offset'].tolist():
+    # offset.append(hex(o))
+    p_offset.append((128148 + NxFS_start) * BytesPerSector + o)
+
+
+p_offset_end = []
+
+i = 0
+for k in allocated['size'].tolist():
+    p_offset_end.append(k + p_offset[i])
+    i += 1
+
+allocated['start_offset_P'] = p_offset
+allocated['end_offset_P'] = p_offset_end
 
 print(allocated)   # 할당 영역 확정
 
-allocated.to_csv('D:/allowcated.csv')
+allocated.to_csv('D:/allocated.csv')
  
 print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
 
@@ -369,16 +385,21 @@ for name in folder_name:
     n = allocated.loc[allocated['folder'] == name]
     if n.empty:
         break
-    print(n.iloc[-1])   # 할당 마지막 데이터 가져오기
+
+    end_A = n.iloc[-1]   # 할당 마지막 데이터 가져오기
+
+    if end_A['end_offset'] > end_A['start_offset']:
+        print(end_A['end_offset'])
         
+
 
 
 # 미할당 오프셋
 
 filex_list = []
 
-for i in range(len(file_df)):
-    file.seek((NxFS_start + 128148) * BytesPerSector + file_df.at[i, 'end_offset'], 0)   # end
+for i in range(len(allocated)):
+    file.seek((NxFS_start + 128148) * BytesPerSector + allocated.at[i, 'end_offset'], 0)   # end
     file.seek(6, 1)
     size = convert_byte_to_int(file.read(4))   # 사이즈 위치 읽기
     file.seek(4, 1)
@@ -394,32 +415,38 @@ for i in range(len(file_df)):
 
 filex_df = pd.DataFrame(filex_list, columns=['name', 'start_offset', 'end_offset', 'size'])
 
+filex_df = filex_df.drop(filex_df[filex_df['size'] == 0].index)
 print(filex_df)
 
 file.close()
 
 
 
-
-def All_export_to_avi(df):
+def All_export_to_avi(file_df, folder_df):
     file = open(target, 'rb')
 
-    for i in range(len(df)):
-        file.seek((NxFS_start + 128148) * BytesPerSector + df.at[i, 'start_offset'], 0)   # start
+    for i in range(len(file_df)):
+        file.seek((NxFS_start + 128148) * BytesPerSector + file_df.at[i, 'start_offset'], 0)   # start
         now = file.tell()
 
-        if df.at[i, 'start_offset'] > df.at[i, 'end_offset']:
-            print(df.at[i, 'file_index'])
-            print(now)
-            
-            
-        
-        file_size = df.at[i, 'size']
-        d = file.read(file_size)
+        if file_df.at[i, 'start_offset'] > file_df.at[i, 'end_offset']:
+            folder_df.set_index('name', inplace=True)
+            folder = file_df.at[i, 'folder']
+            end = folder_df.at[folder, 'end_offset_P']
+            size_1 = end - now
+            print(size_1)
+            d1 = file.read(size_1)
+            size_2 = file_df.at[i, 'size'] - size_1
+            d2 = file.read(size_2)
+            d = d1 + d2
+    
+        else:
+            file_size = file_df.at[i, 'size']
+            d = file.read(file_size)
 
         # 할당 영역 파일 추출
         p = re.compile('\w+(?=[.])')   # 파일이름에서 확장자 이전만 출력
-        m = p.match(df.at[i, 'name'])
+        m = p.match(file_df.at[i, 'name'])
         FILENAME = m.group()   # 파일 이름 불러오기
 
         # 클러스터 단위로 저장
@@ -470,6 +497,6 @@ def unallocated(df):
     print(df)
 
 
-# All_export_to_avi(a)
+# All_export_to_avi(allocated, folder_df)
 
 print(f"{time.time()-start:.4f} sec")
