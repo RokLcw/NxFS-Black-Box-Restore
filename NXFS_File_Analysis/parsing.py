@@ -38,28 +38,6 @@ def convert_datetime(unixtime):
     date = datetime.fromtimestamp(int(unixtime))
     return date
 
-
-def df_to_sql(folder, file, filename):
-    '''데이터프레임을 SQL로 저장'''
-    import sqlite3
-    import pandas as pd
-    from pandas import Series, DataFrame
-
-
-    conn = sqlite3.connect("D:\\NxFS.db",isolation_level=None)
-    global c
-    c = conn.cursor()
-
-    s = folder
-    q = file
-    l = filename
-
-    A = s.to_sql('FOLDER',conn, if_exists='replace', index=False)
-    B = q.to_sql('FILE', conn, if_exists='replace', index=False)
-    C = l.to_sql('FILENAME', conn, if_exists='replace')
-
-
-
 def All_export_to_avi(file_df, folder_df):
     file = open(target, 'rb')
 
@@ -112,6 +90,7 @@ def All_export_to_avi(file_df, folder_df):
     file.close()
 
 
+# 인덱스 값은 리스트로 넘어와야 함
 def select_export_slack(index, df):
     file = open(target, 'rb')
 
@@ -141,8 +120,6 @@ def unallocated(file_df, folder_df):
         if n.empty:
             break
 
-        
-        print(n.iloc[-1])
         end_A = n.iloc[-1]   # 할당 마지막 데이터 가져오기
 
 
@@ -152,7 +129,6 @@ def unallocated(file_df, folder_df):
             
             unallocated_start = DATA_AREA + end_A['end_clus'] + Cluster_size
             unallocated_end = DF.at[name, 'end_offset_P']
-            print(unallocated_start, unallocated_end)
 
             now = file.tell()
             
@@ -192,13 +168,16 @@ def unallocated(file_df, folder_df):
                 now = file.tell()
                 n += 1
 
+    global filex_avi
+
     if LIST:
         p = []   # 데이터 나누어 저장
         for j in range(0, len(LIST), 5):
             p.append(LIST[j:j+5])
-        global filex_avi
         filex_avi = pd.DataFrame(p, columns=['folder_index', 'start_offset', 'end_offset', 'size', 'folder'])
         return filex_avi.to_csv('unallocated-avi.csv')
+    else:
+        filex_avi = pd.DataFrame()
 
     file.close()
 
@@ -249,7 +228,7 @@ def select_export_avi(index, df):
 
 
 
-target = 'D:/Carmore.001'
+target = 'D:/Urive.001'
 
 file = open(target, 'rb')
 
@@ -379,7 +358,7 @@ while now < ((METADATA_AREA + 4688) * BytesPerSector):
                 break
         
     now = file.tell()  
-    print(now)  
+
 
 
 p = []   # 데이터 나누어 저장
@@ -452,9 +431,8 @@ df['folder'] = np.select(conditions, vals)
 filename_df = df.dropna()   # 결치값 삭제
 filename_df.set_index('folder_index', inplace=True) 
 
-print(filename_df)
 
-# filename_df.to_csv('D:/filename.csv')
+filename_df.to_csv('D:/filename.csv')
 
 
 '''실제 데이터'''
@@ -509,7 +487,7 @@ for i in range(len(file_df_sorted)):
 
 
 '''누락 데이터 추가하기'''
-print(file_df_sorted.loc[omit])
+# file_df_sorted.loc[omit]
 
 file.seek(offset + file_df_sorted.at[omit, 'start_clus'])
 N = file.read(14)
@@ -524,8 +502,6 @@ while True:
         break
     count += 1
 
-print("count =", count)
-
     
 file_df.loc[file_df['folder_index'] == folder_id, 'end_clus'] = (count - 1) * 65536 + file_df_sorted.at[omit, 'start_clus']
 
@@ -533,11 +509,6 @@ file.seek(offset + file_df_sorted.at[omit, 'end_clus'] + 6)
 s = convert_byte_to_int(file.read(4)) + 14   # 헤더 사이즈 포함
 
 file_df.loc[file_df['folder_index'] == folder_id, 'size'] = (count - 1) * 65536 + s
-
-
-file_df_sorted.to_csv('D:/sorted.csv')
-file_df.to_csv('D:/file_df.csv')
-
 
 
 allocated = pd.merge(file_df, filename_df, on='folder_index')
@@ -548,7 +519,6 @@ p_offset = []
 
 for o in allocated['start_clus'].tolist():
     p_offset.append((128148 + NxFS_start) * BytesPerSector + o)
-
 
 p_offset_end = []
 
@@ -562,27 +532,11 @@ allocated['end_offset'] = p_offset_end
 
 print(allocated)   # 할당 영역 확정
 
-allocated.to_csv('D:/allocated.csv')
+
  
 print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
 
-
-
-folder_name = folder_df['name'].tolist()
-
-print(allocated.loc[allocated['folder'] == 'NORMAL'])
-
-for name in folder_name:
-    n = allocated.loc[allocated['folder'] == name]
-    if n.empty:
-        break
-
-    end_A = n.iloc[-1]   # 할당 마지막 데이터 가져오기
-
-    if end_A['end_clus'] > end_A['start_clus']:
-        print(end_A['end_clus'])
-        
-
+allocated.to_csv('D:/allocated.csv')
 
 
 # 미할당 오프셋
@@ -606,19 +560,53 @@ for i in range(len(allocated)):
 
 filex_df = pd.DataFrame(filex_list, columns=['name', 'start_offset', 'end_offset', 'size'])
 
-filex_df = filex_df.drop(filex_df[filex_df['size'] == 0].index)
-filex_df.sort_values(by='start_offset', inplace=True)
-filex_df.reset_index(inplace=True)
 
-filex_df.to_csv('slack.csv')
+SLACK_DF = filex_df.drop(filex_df[filex_df['size'] == 0].index)
+
+unallocated(allocated, folder_df) # 미할당 정의 함수 출력
+
+# 슬랙 추가
+if not filex_avi.empty:
+    slack_list = []
+    for i in range(len(filex_avi)):
+        file.seek(filex_avi.at[i, 'end_offset'], 0)   # end
+        file.seek(6, 1)
+        size = convert_byte_to_int(file.read(4))   # 사이즈 위치 읽기
+        file.seek(4, 1)
+        file.seek(size, 1)
+
+        SLACK_NAME = file.tell()
+        slack_size = Cluster_size - 14 - size
+        slack_list.append([SLACK_NAME])
+        slack_list[i].append(SLACK_NAME)
+        slack_list[i].append(SLACK_NAME + slack_size)
+        slack_list[i].append(slack_size)
+        
+    unallocated_slack = pd.DataFrame(slack_list, columns=['name', 'start_offset', 'end_offset', 'size'])
+    SLACK_DF = pd.concat([filex_df, unallocated_slack])
+
+conditions = []
+vals = []
+for i in range(len(folder_df)):
+    conditions.append((SLACK_DF['start_offset'] >= folder_df['start_offset_P'][i]) & (SLACK_DF['start_offset'] <= folder_df['end_offset_P'][i]))
+    vals.append(folder_df['name'][i])
+
+SLACK_DF['folder'] = np.select(conditions, vals)
+
+SLACK_DF = SLACK_DF.drop(SLACK_DF[SLACK_DF['size'] == 0].index)
+SLACK_DF.sort_values(by='start_offset')
+SLACK_DF = SLACK_DF.reset_index(drop=True)
+
 file.close()
 
-# select_export_slack(list(range(0,len(filex_df))), filex_df)
+SLACK_DF.to_csv('slack.csv')
+
+select_export_slack(list(range(108,150)), SLACK_DF)
 
 
 # unallocated(allocated, folder_df)
 
-# select_export_avi([900,903], filex_avi)
+# select_export_avi([863,903], filex_avi)
 # All_export_to_avi(allocated, folder_df)
 
 print(f"{time.time()-start:.4f} sec")
