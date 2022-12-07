@@ -104,7 +104,7 @@ def select_export_slack(index, df):
         SLACK_NAME = str(df.at[i,'name'])
         slack = file.read(size)   # 헤더 값과 실제데이터를 뺀 부분 = 슬랙
 
-        with open(SLACK_NAME+'.dat', 'wb') as s:
+        with open(SLACK_NAME, 'wb') as s:
             s.write(slack)
 
     file.close()
@@ -603,8 +603,8 @@ file.close()
 
 SLACK_DF.to_csv('slack.csv')
 
+'''avi 및 슬랙 추출 호출 함수'''
 # select_export_slack(list(range(108,150)), SLACK_DF)
-# unallocated(allocated, folder_df)
 # select_export_avi([4299], allocated)
 # All_export_to_avi(allocated, folder_df)
 
