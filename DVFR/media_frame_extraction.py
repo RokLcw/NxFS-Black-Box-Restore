@@ -27,9 +27,9 @@ if __name__ == '__main__':
 
     print('\n[*] Input_file :', sys.argv[1],' ','Size :', size_return(file_size),'\n')
 
-    if(sys.argv[1][-3:] != "avi"):
-        print("Not AVI, check file")
-        exit(1)
+    # if(sys.argv[1][-3:] != "avi"):
+    #     print("Not AVI, check file")
+    #     exit(1)
 
     with open(sys.argv[1], "rb") as media_file:
         data = media_file.read()
@@ -41,17 +41,27 @@ if __name__ == '__main__':
     if(data[0:4] != b"\x52\x49\x46\x46"):
         # 헤더, idx1 값만 날아간 경우
         print("No Signature(Magic Number)")
-        movi_list_start_offset = int(data.find(b"\x6D\x6F\x76\x69")) - 8
-        movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
-        movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
-        print(hex(movi_list_start_offset))
-        print(hex(movi_list_size))
-        check = 0
+        # print(data.find(b"\x6D\x6F\x76\x69"))
+        # print(data.find(b"\x00\x00\x01\x67"))
+        if(data.find(b"\x6D\x6F\x76\x69") != -1):
+            print("movi list 헤더가 있는 경우")
+            movi_list_start_offset = int(data.find(b"\x6D\x6F\x76\x69")) - 8
+            movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
+            movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
+            check = 0
+            # print(hex(movi_list_start_offset))
+            # print(hex(movi_list_size))
+        elif (data.find(b"\x00\x00\x00\x01\x67") != -1):
+            media_start_offset = int(data.find(b"\x00\x00\x00\x01\x67")) - 8
+            print("movi list 손상")
+            check = 2
+        
+
     else:
         # -------------------hdrl-------------------
-        # print(data[16:20])
+        # print("hdrl  start offset: ", )
         # print(int.from_bytes(data[16:20], 'little'))
-
+        
         hdrl_size = int.from_bytes(data[16:20], 'little')
         hdrl = data[12:20 + hdrl_size]
         # print(hdrl)
@@ -117,58 +127,60 @@ if __name__ == '__main__':
         movi_list_start_offset = 20 + hdrl_size + junk_size
         print("movi list start offset: ", hex(movi_list_start_offset))
         movi_list_size = int.from_bytes(data[movi_list_start_offset+4:movi_list_start_offset+8], 'little')
-        # print(movi_list_size)
+        print(hex(movi_list_size))
         movi = data[movi_list_start_offset:movi_list_start_offset+8+movi_list_size]
         
         # with open("movi", "ab") as f:
         #     f.write(movi)
 
         # print(movi_list_start_offset+movi_list_size)
-
-    # -------------------idx-------------------
-    idx1_start_offset = movi_list_start_offset+8+movi_list_size
-    movi_list_magic_number = []
-    idx1_list_pointer = idx1_start_offset + 8
-    print("\nidx1 start offset: ", hex(idx1_start_offset))
-    idx1_size = int.from_bytes(data[idx1_start_offset+4:idx1_start_offset+8], 'little')
-    # print("idx1_size: ", idx1_size)
-    idx = data[idx1_start_offset:idx1_start_offset+8+idx1_size]
-    # print("idx1_list_pointer: ", hex(idx1_list_pointer))
-    # print(hex((idx1_start_offset + 8) + idx1_size))
-    while((idx1_start_offset + 8) + idx1_size != idx1_list_pointer):
-        # print(data[idx1_list_pointer:idx1_list_pointer+4])
-        # print(hex(idx1_list_pointer))
-        movi_list_magic_number.append(data[idx1_list_pointer:idx1_list_pointer+4])
-        # print(data[idx1_list_pointer:idx1_list_pointer+4])
-        idx1_list_pointer += (12 + 4)   # 14: 간격, 4: magic number
+    
+    if(check != 2):
+        # -------------------idx-------------------
+        idx1_start_offset = data.find(b"\x69\x64\x78\x31")
+        movi_list_magic_number = []
+        idx1_list_pointer = idx1_start_offset + 8
+        print("\nidx1 start offset: ", hex(idx1_start_offset))
+        idx1_size = int.from_bytes(data[idx1_start_offset+4:idx1_start_offset+8], 'little')
+        # print("idx1_size: ", idx1_size)
+        idx = data[idx1_start_offset:idx1_start_offset+8+idx1_size]
         # print("idx1_list_pointer: ", hex(idx1_list_pointer))
-    # print(movi_list_magic_number)
-    movi_list_magic_number.append("\x00\x00\x00\x00")
-    # print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
-    print("idx1_list_pointer: ", hex(idx1_list_pointer))
-    # print(idx)
-        
-    # -------------------movi list frame extraction-------------------
+        # print(hex((idx1_start_offset + 8) + idx1_size))
+        while((idx1_start_offset + 8) + idx1_size != idx1_list_pointer):
+            # print(data[idx1_list_pointer:idx1_list_pointer+4])
+            # print(hex(idx1_list_pointer))
+            movi_list_magic_number.append(data[idx1_list_pointer:idx1_list_pointer+4])
+            # print(data[idx1_list_pointer:idx1_list_pointer+4])
+            idx1_list_pointer += (12 + 4)   # 14: 간격, 4: magic number
+            # print("idx1_list_pointer: ", hex(idx1_list_pointer))
+        # print(movi_list_magic_number)
+        movi_list_magic_number.append("\x00\x00\x00\x00")
+        # print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
+        print("idx1_list_pointer: ", hex(idx1_list_pointer))
+        # print(idx)
+            
+        # -------------------movi list frame extraction-------------------
 
-    # -------------------movi list header-------------------
-    movi_list_head = []
-    movi_list_head_len = 0
-    move_loc = 0
-    while(1):
-        if(movi[move_loc:move_loc+4] == b'\x30\x30\x64\x63' or movi[move_loc:move_loc+4] == b'\x30\x31\x64\x63'
-        or movi[move_loc:move_loc+4] == b'\x30\x33\x73\x74' or movi[move_loc:move_loc+4] == b'\x30\x34\x73\x74'):
-            break
-        movi_list_head_len += len(movi[move_loc:move_loc+4])
-        if (move_loc >= 16):
-            movi_list_head[3] = movi_list_head[3] + movi[move_loc:move_loc+4]
+        # -------------------movi list header-------------------
+        movi_list_head = []
+        movi_list_head_len = 0
+        move_loc = 0
+        while(1):
+            if(movi[move_loc:move_loc+4] == b'\x30\x30\x64\x63' or movi[move_loc:move_loc+4] == b'\x30\x31\x64\x63' or movi[move_loc:move_loc+4] == b'\x30\x31\x77\x62'
+            or movi[move_loc:move_loc+4] == b'\x30\x33\x73\x74' or movi[move_loc:move_loc+4] == b'\x30\x34\x73\x74' or movi[move_loc:move_loc+4] == b'\x30\x32\x73\x74'):
+                break
+            movi_list_head_len += len(movi[move_loc:move_loc+4])
+            if (move_loc >= 16):
+                movi_list_head[3] = movi_list_head[3] + movi[move_loc:move_loc+4]
+                move_loc += 4
+                continue
+            movi_list_head.append(movi[move_loc:move_loc+4])
             move_loc += 4
-            continue
-        movi_list_head.append(movi[move_loc:move_loc+4])
-        move_loc += 4
-    print("\nmovi_list_head: ", movi_list_head)
+        print("\nmovi_list_head: ", movi_list_head)
 
     # -------------------media(video, sound etc)-------------------
-    media_start_offset = movi_list_start_offset + movi_list_head_len
+    if (check != 2):
+        media_start_offset = movi_list_start_offset + movi_list_head_len
     movi_list_pointer = media_start_offset
     print("\nmedia_start_offset: ", hex(media_start_offset))
 
@@ -179,6 +191,7 @@ if __name__ == '__main__':
     Frame_index = 0
     h264_front = []
     h264_back = []
+    channel = 1
     h264_frame = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
     h264_frame_pframe = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_offset', "End_Offset", "Size"])
 
@@ -186,7 +199,7 @@ if __name__ == '__main__':
     h264_frame_pframe.loc[len(h264_frame_pframe)] = ['0x00','0x00','0x00','0x00','0x00']
     # print(h264_frame_pframe)
 
-
+    # exit(1)
     while(1):
         # Pframe
         if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
@@ -285,6 +298,7 @@ if __name__ == '__main__':
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
+            channel = 2
 
         elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x64\x63'): # 파인뷰 후방
             movi_list_pointer += 1
@@ -297,6 +311,7 @@ if __name__ == '__main__':
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
+            channel = 2
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
             # print("\n텍스트")
@@ -314,7 +329,7 @@ if __name__ == '__main__':
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
 
-        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x73\x74' or data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x73\x74'): # 03st, 04st
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x73\x74' or data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x73\x74' or data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x73\x74'): # 03st, 04st, 02st
             # print("\n뭔데 이거~")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
@@ -336,6 +351,9 @@ if __name__ == '__main__':
         if(check == 0):
             if(movi_list_pointer >= idx1_start_offset):
                 break
+        elif(check == 2):
+            if(movi_list_pointer >= len(data)):
+                break
             
         else:
             if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
@@ -347,7 +365,7 @@ if __name__ == '__main__':
                 else:
                     print("\nunknown_movi_list_data_offset: ", hex(movi_list_pointer), " ~ ", hex((movi_list_pointer + unknown_movi_list_data_size)-1))
                 break
-
+        
         # if(movi_list_pointer > idx1_start_offset):
         #     print("Last movi_list_pointer: ", hex(movi_list_pointer))
         #     break
@@ -402,25 +420,26 @@ if __name__ == '__main__':
         .run()
     )
 
-    with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
-        frame.write(bytes(h264_back))
-        # print(h264_back)
+    if (channel == 2):
+        with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
+            frame.write(bytes(h264_back))
+            # print(h264_back)
 
-    about_media = (
-        ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
-    )
+        about_media = (
+            ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
+        )
 
-    # print(about_media)
-    # print(type(about_media))
-    # print(about_media['streams'][0]['time_base'])
-    time_base = about_media['streams'][0]['time_base']
+        # print(about_media)
+        # print(type(about_media))
+        # print(about_media['streams'][0]['time_base'])
+        time_base = about_media['streams'][0]['time_base']
 
-    save_media = (
-        ffmpeg
-        .input(f"./result/{save_folder_name}/back.dat")
-        .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
-        .run()
-    )
+        save_media = (
+            ffmpeg
+            .input(f"./result/{save_folder_name}/back.dat")
+            .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
+            .run()
+        )
         
     # offset csv 저장
     h264_frame.to_csv(f'./result/{save_folder_name}/offset_info.csv', encoding='CP949')
@@ -472,9 +491,9 @@ if __name__ == '__main__':
                     .run()
                 )
                 
-    
-    with open(f"./result/{save_folder_name}/unknown.dat", "wb") as frame:
-        frame.write(bytes(unknown_movi_list_data))
+    if(check == 1):
+        with open(f"./result/{save_folder_name}/unknown.dat", "wb") as frame:
+            frame.write(bytes(unknown_movi_list_data))
         # print(h264_back)
 
     # sps, pps, iframe, pframe 파싱
