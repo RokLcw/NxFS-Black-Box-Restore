@@ -14,6 +14,7 @@ global NxFS_start
 global NxFS_size
 global BytesPerSector
 global Cluster_size
+global DATA_AREA
 
 
 def convert_byte_to_int(bytes):
@@ -60,7 +61,7 @@ def df_to_sql(folder, file, filename):
 
 
 
-target = 'D:/Urive.001'
+target = 'D:/Carmore.001'
 
 file = open(target, 'rb')
 
@@ -271,8 +272,10 @@ print(filename_df)
 '''실제 데이터'''
 offset = (NxFS_start + 128148) * BytesPerSector
 file.seek(offset, 0)   # 실제 데이터 위치
-print('Data area offset :', file.tell())
-print('Data area offset :', hex(file.tell()))
+DATA_AREA = file.tell()
+
+print('Data area offset :', DATA_AREA)
+print('Data area offset :', hex(DATA_AREA))
 
 file.seek((NxFS_start + 128148) * BytesPerSector)
 
@@ -381,6 +384,8 @@ print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
 
 folder_name = folder_df['name'].tolist()
 
+print(allocated.loc[allocated['folder'] == 'NORMAL'])
+
 for name in folder_name:
     n = allocated.loc[allocated['folder'] == name]
     if n.empty:
@@ -416,6 +421,7 @@ for i in range(len(allocated)):
 filex_df = pd.DataFrame(filex_list, columns=['name', 'start_offset', 'end_offset', 'size'])
 
 filex_df = filex_df.drop(filex_df[filex_df['size'] == 0].index)
+
 print(filex_df)
 
 file.close()
@@ -434,7 +440,6 @@ def All_export_to_avi(file_df, folder_df):
             folder = file_df.at[i, 'folder']
             end = folder_df.at[folder, 'end_offset_P']
             size_1 = end - now
-            print(size_1)
             d1 = file.read(size_1)
             size_2 = file_df.at[i, 'size'] - size_1
             d2 = file.read(size_2)
@@ -493,10 +498,100 @@ def export_slack(df):
 
     file.close()
 
-def unallocated(df):
-    print(df)
+def unallocated(file_df, folder_df):
+    file = open(target, 'rb')
+    folder_name = folder_df['name'].tolist()
+
+    for name in folder_name:
+        n = file_df.loc[file_df['folder'] == name]
+        if n.empty:
+            break
+
+        
+        print(n.iloc[-1])
+        end_A = n.iloc[-1]   # 할당 마지막 데이터 가져오기
+
+        DF = folder_df.set_index(['name'])
+        if  end_A['end_offset'] > end_A['start_offset']:
+            
+            unallocated_start = DATA_AREA + end_A['end_offset'] + Cluster_size
+            unallocated_end = DF.at[name, 'end_offset_P']
+            print(unallocated_start, unallocated_end)
+
+            now = file.tell()
+            
+            n = 0
+            LIST = []
+            while now < unallocated_end:
+                file.seek(unallocated_start + Cluster_size * n)
+                parser = re.compile("RIFF")
+                file.seek(14, 1)
+                keyword = file.read(4)
+                if keyword == b'RIFF':
+                    now = file.tell()
+                    filename = now
+                    file.seek(unallocated_start + Cluster_size * n)
+                    H = file.read(14)
+                    file.seek(-14, 1)
+                    folder_id = convert_byte_to_int(H[2:6])
+                    c_size = convert_byte_to_int(H[6:8])
+                    LIST.append(folder_id)
+                    
+                    header = H[0:6]
+                    print(header)
+                    start = file.tell()
+                    LIST.append(start)
+                    count = 0
+                    while c_size == 65522:
+                        file.seek(Cluster_size, 1)
+                        H = file.read(14)
+                        file.seek(-14, 1)
+                        c_size = convert_byte_to_int(H[6:8])
+                        count += 1
+                    
+                    end = file.tell()
+                    LIST.append(end)
+                    print(c_size)
+                    LIST.append(end + 14 + c_size - start)
+                    LIST.append(name)
+                
+                now = file.tell()
+                n += 1
 
 
+    p = []   # 데이터 나누어 저장
+    for j in range(0, len(LIST), 5):
+        p.append(LIST[j:j+5])
+    filex_avi = pd.DataFrame(p, columns=['folder_id', 'start_offset', 'end_offset', 'size', 'folder'])
+    print(filex_avi)
+    file.close()
+
+# 인덱스
+def export(index, df):
+    # 클러스터 단위로 저장
+    with open("data.pickle", 'wb') as fw:    
+        # pickle.dump(d, fw)
+        fw.write(d)
+    
+    D = open("data.pickle", "rb")
+
+    # 분할된 파일 합쳐서 추출
+    with open(FILENAME+'.avi', 'wb') as f:
+        n = 1
+        while True:
+            h = D.read(14)
+            s = convert_byte_to_int(h[6:8])
+            data = D.read(s)
+            if not data:
+                break
+            f.write(data)
+            D.seek(0)
+            D.seek(65536 * n, 1)
+            n += 1
+
+    D.close()
+
+unallocated(allocated, folder_df)
 # All_export_to_avi(allocated, folder_df)
 
 print(f"{time.time()-start:.4f} sec")
