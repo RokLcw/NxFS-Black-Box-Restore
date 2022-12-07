@@ -191,7 +191,9 @@ def select_export_avi(index, df):
     
     for i in index:
         if 'name' in df.columns:
-            FILENAME = df.loc[i, 'name']
+            p = re.compile('\w+(?=[.])')   # 파일이름에서 확장자 이전만 출력
+            m = p.match(df.at[i, 'name'])
+            FILENAME = m.group()   # 파일 이름 불러오기
         else:
             FILENAME = str(df.loc[i, 'start_offset'])
     
@@ -228,7 +230,7 @@ def select_export_avi(index, df):
 
 
 
-target = 'D:/Urive.001'
+target = 'D:/Carmore.001'
 
 file = open(target, 'rb')
 
@@ -601,12 +603,9 @@ file.close()
 
 SLACK_DF.to_csv('slack.csv')
 
-select_export_slack(list(range(108,150)), SLACK_DF)
-
-
+# select_export_slack(list(range(108,150)), SLACK_DF)
 # unallocated(allocated, folder_df)
-
-# select_export_avi([863,903], filex_avi)
+# select_export_avi([4299], allocated)
 # All_export_to_avi(allocated, folder_df)
 
 print(f"{time.time()-start:.4f} sec")
