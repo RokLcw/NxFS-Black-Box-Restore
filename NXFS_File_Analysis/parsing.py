@@ -2,9 +2,12 @@ import re
 import pandas as pd
 from pandas import DataFrame
 import time
+from time import strftime
+from time import gmtime
 from datetime import datetime
 import pickle
 import numpy as np
+
 
 import time # time 라이브러리 import
 start = time.time() # 시작
@@ -35,8 +38,9 @@ def is_NxFS(BR):
 
 def convert_datetime(unixtime):
     '''Convert unixtime to datetime'''
-    date = datetime.fromtimestamp(int(unixtime))
-    return date
+    dt = time.gmtime(unixtime)
+    dt = time.strftime('%Y-%m-%d %H:%M:%S', dt)
+    return dt
 
 def All_export_to_avi(file_df, folder_df):
     file = open(target, 'rb')
@@ -230,7 +234,7 @@ def select_export_avi(index, df):
 
 
 
-target = 'D:/Carmore.001'
+target = 'E:/Carmore.001'
 
 file = open(target, 'rb')
 
@@ -404,7 +408,7 @@ while now < ((NxFS_start + 15647 + 37500) * BytesPerSector):
             file.seek(4, 1)
             
             fDate = convert_byte_to_int(file.read(4))
-            fName_list[i].append(fDate)   # 유닉스 시간
+            fName_list[i].append(fDate)    # 유닉스 시간
             file.seek(2 + 16, 1)
 
             i += 1
@@ -422,19 +426,22 @@ while now < ((NxFS_start + 15647 + 37500) * BytesPerSector):
 
 df = pd.DataFrame(fName_list, columns=['name','folder_index', 'datetime'])   # 파일 이름 및 폴더 인덱스, 생성 시간
 
+
 conditions = []
 vals = []
 for i in range(len(folder_df)):
     conditions.append((df['folder_index'] >= folder_df['start_index'][i]) & (df['folder_index'] <= folder_df['end_index'][i]))
     vals.append(folder_df['name'][i])
 
+
 df['folder'] = np.select(conditions, vals)
+
 
 filename_df = df.dropna()   # 결치값 삭제
 filename_df.set_index('folder_index', inplace=True) 
 
 
-filename_df.to_csv('D:/filename.csv')
+filename_df.to_csv('filename.csv')
 
 
 '''실제 데이터'''
@@ -532,13 +539,20 @@ for k in allocated['size'].tolist():
 allocated['start_offset'] = p_offset
 allocated['end_offset'] = p_offset_end
 
+t = []
+for j in allocated.datetime:
+    t.append(convert_datetime(j))
+
+allocated['datetime'] = t
+
+
 print(allocated)   # 할당 영역 확정
 
 
  
 print(f"{time.time()-start:.4f} sec") # 종료와 함께 수행시간 출력
 
-allocated.to_csv('D:/allocated.csv')
+allocated.to_csv('allocated.csv')
 
 
 # 미할당 오프셋
@@ -604,7 +618,7 @@ file.close()
 SLACK_DF.to_csv('slack.csv')
 
 '''avi 및 슬랙 추출 호출 함수'''
-# select_export_slack(list(range(108,150)), SLACK_DF)
+select_export_slack(list(range(10,30)), SLACK_DF)
 # select_export_avi([4299], allocated)
 # All_export_to_avi(allocated, folder_df)
 
