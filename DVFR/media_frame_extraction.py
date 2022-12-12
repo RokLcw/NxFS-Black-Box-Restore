@@ -191,7 +191,7 @@ if __name__ == '__main__':
     Frame_index = 0
     h264_front = []
     h264_back = []
-    channel = 1
+    # channel = 1
     h264_frame = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
     h264_frame_pframe = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_offset', "End_Offset", "Size"])
 
@@ -298,7 +298,7 @@ if __name__ == '__main__':
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
-            channel = 2
+            # channel = 2
 
         elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x64\x63'): # 파인뷰 후방
             movi_list_pointer += 1
@@ -311,7 +311,7 @@ if __name__ == '__main__':
             # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
-            channel = 2
+            # channel = 2
 
         elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
             # print("\n텍스트")
@@ -400,46 +400,46 @@ if __name__ == '__main__':
     os.makedirs(f"./result/{save_folder_name}/frame/후방", exist_ok=True)
 
     # 전방, 후방 영상 추출
-    with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
-        frame.write(bytes(h264_front))
-        # print(h264_front)
+    # with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
+    #     frame.write(bytes(h264_front))
+    #     # print(h264_front)
 
-    about_media = (
-        ffmpeg.probe(f"./result/{save_folder_name}/front.dat")
-    )
+    # about_media = (
+    #     ffmpeg.probe(f"./result/{save_folder_name}/front.dat")
+    # )
 
-    # print(about_media)
-    # print(type(about_media))
-    # print(about_media['streams'][0]['time_base'])
-    time_base = about_media['streams'][0]['time_base']
+    # # print(about_media)
+    # # print(type(about_media))
+    # # print(about_media['streams'][0]['time_base'])
+    # time_base = about_media['streams'][0]['time_base']
 
-    save_media = (
-        ffmpeg
-        .input(f"./result/{save_folder_name}/front.dat")
-        .output(f"./result/{save_folder_name}/front.avi", video_bitrate=int(time_base[2:])/1000)
-        .run()
-    )
+    # save_media = (
+    #     ffmpeg
+    #     .input(f"./result/{save_folder_name}/front.dat")
+    #     .output(f"./result/{save_folder_name}/front.avi", video_bitrate=int(time_base[2:])/1000)
+    #     .run()
+    # )
 
-    if (channel == 2):
-        with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
-            frame.write(bytes(h264_back))
-            # print(h264_back)
+    # if (channel == 2):
+    #     with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
+    #         frame.write(bytes(h264_back))
+    #         # print(h264_back)
 
-        about_media = (
-            ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
-        )
+    #     about_media = (
+    #         ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
+    #     )
 
-        # print(about_media)
-        # print(type(about_media))
-        # print(about_media['streams'][0]['time_base'])
-        time_base = about_media['streams'][0]['time_base']
+    #     # print(about_media)
+    #     # print(type(about_media))
+    #     # print(about_media['streams'][0]['time_base'])
+    #     time_base = about_media['streams'][0]['time_base']
 
-        save_media = (
-            ffmpeg
-            .input(f"./result/{save_folder_name}/back.dat")
-            .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
-            .run()
-        )
+    #     save_media = (
+    #         ffmpeg
+    #         .input(f"./result/{save_folder_name}/back.dat")
+    #         .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
+    #         .run()
+    #     )
         
     # offset csv 저장
     h264_frame.to_csv(f'./result/{save_folder_name}/offset_info.csv', encoding='CP949')
