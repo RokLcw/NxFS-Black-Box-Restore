@@ -158,7 +158,6 @@ if __name__ == '__main__':
         # print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
         print("idx1_list_pointer: ", hex(idx1_list_pointer))
         # print(idx)
-            
         # -------------------movi list frame extraction-------------------
 
         # -------------------movi list header-------------------
@@ -345,6 +344,39 @@ if __name__ == '__main__':
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
         
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x32\x74\x78'):
+            movi_list_pointer += 1
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x74\x78'):
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+        
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x77\x62'):
+            movi_list_pointer += 1
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x33\x77\x62'):
+            movi_list_pointer += 1
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x77\x62'):
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+        
         # idx1 list에 있는 값들과 모두 일치할 경우
         # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
         # 하다가 다른거 있으면 -> 뻑나는거임
@@ -357,6 +389,7 @@ if __name__ == '__main__':
             
         else:
             if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
+                print(data[movi_list_pointer:movi_list_pointer+4])
                 print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
                 unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
                 unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
@@ -449,6 +482,8 @@ if __name__ == '__main__':
     cnt_front = 0
     cnt_back = 0
 
+    sps_pps_data = bytes(data[int(h264_frame.iloc[0,2][2:], 16):data.find(b"\x00\x00\x00\x01\x65")])
+
     for i in range (0,len(h264_frame)):
         # print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
         # print("\n")
@@ -462,7 +497,13 @@ if __name__ == '__main__':
                 # print(type(start))
                 end = h264_frame.iloc[i, 3]
                 # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
-                frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+                frame_data = bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+
+                if(frame_data.find(b"\x00\x00\x00\x01\x67") == -1 and frame_data.find(b"\x00\x00\x00\x01\x68") == -1):
+                    frame_data = sps_pps_data + frame_data
+                    frame.write(frame_data)
+                else:
+                    frame.write(frame_data)
 
                 (
                     ffmpeg
