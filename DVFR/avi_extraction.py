@@ -26,6 +26,7 @@ if __name__ == '__main__':
 
     frame_count = data_frame.iloc[len(data_frame)-1, 0]
     cnt = 1
+    channel = 1
 
     h264_front = []
     h264_back = []
