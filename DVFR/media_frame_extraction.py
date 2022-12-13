@@ -202,6 +202,9 @@ if __name__ == '__main__':
 
     # exit(1)
     while(1):
+        # print(hex(movi_list_pointer))
+        # if(cnt==5):
+        #     exit(1)
         # Pframe
         if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
             # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
@@ -224,6 +227,11 @@ if __name__ == '__main__':
             elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
                 h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
                 append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                 h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
             movi_list_pointer += (frame_size + 8)
@@ -257,6 +265,11 @@ if __name__ == '__main__':
                 append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                 h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
 
             movi_list_pointer += (frame_size + 8)
             cnt += 1
@@ -264,9 +277,75 @@ if __name__ == '__main__':
             # time.sleep(0.5)
 
             continue
+
+        elif(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x67'):
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            loc = data[movi_list_pointer+8:(movi_list_pointer+8) + frame_size].find(b"\x00\x00\x00\x01\x41")
+            # print(loc)
+            if(loc != -1):
+                # print("frame size: ", hex(frame_size))
+                # print(hex(movi_list_pointer))
+
+
+            #     movi_list_pointer += (frame_size + 8)
+                if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
+                    h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                movi_list_pointer += (frame_size + 8)
+                cnt += 1
+
+                continue
+
+        elif(data[movi_list_pointer+9:movi_list_pointer+14] == b'\x00\x00\x00\x01\x67'):
+            frame_size = int.from_bytes(data[movi_list_pointer+5:movi_list_pointer+9], 'little')
+            loc = data[movi_list_pointer+9:(movi_list_pointer+9) + frame_size].find(b"\x00\x00\x00\x01\x41")
+            # print(loc)
+            if(loc != -1):
+                movi_list_pointer += 1
+                # print("frame size: ", hex(frame_size))
+                # print(hex(movi_list_pointer))
+
+
+                # movi_list_pointer += (frame_size + 8)
+                if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
+                    h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                if(data.find(b'\x00\x00\x00\x01\x65',  movi_list_pointer) != -1):
+                    Frame_index += 1
+
+                movi_list_pointer += (frame_size + 8)
+                cnt += 1
+
+                continue
+        
+        
         
         # SPS, PPS, Iframe
-        if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
+        if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 00dc
             # print("\n전방")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
@@ -378,6 +457,51 @@ if __name__ == '__main__':
             # print("\n뭔데 이거~2")
             frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x77\x62'):
+            movi_list_pointer += 1
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x74\x78'):
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x34\x74\x78'):
+            movi_list_pointer += 1
+            # print("\n뭔데 이거~2")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+        
+        elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):
+            # print("\n모름")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+            h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+            append_dataframe = [Frame_index+1, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+            # print(append_dataframe)
+            h264_frame.loc[len(h264_frame)] = append_dataframe
+
+        elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x32\x64\x63'):
+            movi_list_pointer += 1
+            # print("\n모름")
+            frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+            # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+            h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+            append_dataframe = [Frame_index+1, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+            # print(append_dataframe)
+            h264_frame.loc[len(h264_frame)] = append_dataframe
         
         # idx1 list에 있는 값들과 모두 일치할 경우
         # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
@@ -433,6 +557,7 @@ if __name__ == '__main__':
     os.makedirs(f"./result/{save_folder_name}", exist_ok=True)
     os.makedirs(f"./result/{save_folder_name}/frame/전방", exist_ok=True)
     os.makedirs(f"./result/{save_folder_name}/frame/후방", exist_ok=True)
+    os.makedirs(f"./result/{save_folder_name}/frame/unknown", exist_ok=True)
 
     # 전방, 후방 영상 추출
     # with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
@@ -483,6 +608,7 @@ if __name__ == '__main__':
     # frame 단위로 저장
     cnt_front = 0
     cnt_back = 0
+    cnt_unknown = 0
 
     sps_pps_data = bytes(data[int(h264_frame.iloc[0,2][2:], 16):data.find(b"\x00\x00\x00\x01\x65")])
 
@@ -531,6 +657,26 @@ if __name__ == '__main__':
                     ffmpeg
                     .input(f"{save_path}/frame{cnt_back}.dat")
                     .output(f"{save_path}/frame{cnt_back}.jpg")
+                    .run()
+                )
+
+        if 'unknown' in h264_frame.iloc[i, 1]:
+            save_path = f"./result/{save_folder_name}/frame/unknown/"
+            cnt_unknown += 1
+            with open(f"{save_path}/frame{cnt_unknown}.dat", "wb") as frame:
+                start = h264_frame.iloc[i, 2]
+                # print(start[2:])
+                end = h264_frame.iloc[i, 3]
+                # print(end[2:])
+                # print(int(end[2:], 16))
+                # print(int(start[2:], 16), int(end[2:], 16))
+                # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+                frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+
+                (
+                    ffmpeg
+                    .input(f"{save_path}/frame{cnt_unknown}.dat")
+                    .output(f"{save_path}/frame{cnt_unknown}.jpg")
                     .run()
                 )
                 
