@@ -617,7 +617,7 @@ if __name__ == '__main__':
         # print("\n")
 
         if '00' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/00dc/"
+            save_path = f"./result/{save_folder_name}/frame/00/"
             cnt_front += 1
             with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
@@ -641,7 +641,7 @@ if __name__ == '__main__':
                 )
                 
         if '01' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/01dc/"
+            save_path = f"./result/{save_folder_name}/frame/01/"
             cnt_back += 1
             with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
@@ -660,8 +660,8 @@ if __name__ == '__main__':
                     .run()
                 )
 
-        if '02dc' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/02dc/"
+        if '02' in h264_frame.iloc[i, 1]:
+            save_path = f"./result/{save_folder_name}/frame/02/"
             cnt_unknown += 1
             with open(f"{save_path}/frame{cnt_unknown}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
