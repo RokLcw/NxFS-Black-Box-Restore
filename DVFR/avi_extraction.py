@@ -26,10 +26,11 @@ if __name__ == '__main__':
 
     frame_count = data_frame.iloc[len(data_frame)-1, 0]
     cnt = 1
-    channel = 1
+    channel = data_frame['Channel'].max()
 
-    h264_front = []
-    h264_back = []
+    h264_00 = []
+    h264_01 = []
+    h264_02 = []
 
     while(True):
         # print(data_frame[data_frame['Frame_index'] == cnt])
@@ -41,26 +42,35 @@ if __name__ == '__main__':
             if(frame.iloc[i, 1] == 1):
                 start = frame.iloc[i, 2]
                 end = frame.iloc[i, 3]
-                h264_back += data[int(start[2:], 16):int(end[2:], 16) + 1]
-                channel = 2
-                # print("후방")
+                h264_01 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("01")
             elif(frame.iloc[i, 1] == 0):
                 start = frame.iloc[i, 2]
                 end = frame.iloc[i, 3]
-                h264_front += data[int(start[2:], 16):int(end[2:], 16) + 1]
-                # print("전방")
+                h264_00 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("00")
+            elif(frame.iloc[i, 1] == 2):
+                start = frame.iloc[i, 2]
+                end = frame.iloc[i, 3]
+                h264_02 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("02")
 
         for i in range(0, len(pframe)):
             if(pframe.iloc[i, 1] == 1):
                 start = pframe.iloc[i, 2]
                 end = pframe.iloc[i, 3]
-                h264_back += data[int(start[2:], 16):int(end[2:], 16) + 1]
-                # print("후방")
+                h264_01 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("01")
             elif(pframe.iloc[i, 1] == 0):
                 start = pframe.iloc[i, 2]
                 end = pframe.iloc[i, 3]
-                h264_front += data[int(start[2:], 16):int(end[2:], 16) + 1]
-                # print("전방")
+                h264_00 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("00")
+            elif(pframe.iloc[i, 1] == 2):
+                start = pframe.iloc[i, 2]
+                end = pframe.iloc[i, 3]
+                h264_02 += data[int(start[2:], 16):int(end[2:], 16) + 1]
+                # print("02")
 
         cnt += 1
         if(frame_count < cnt):
@@ -68,11 +78,11 @@ if __name__ == '__main__':
 
     save_folder_name = sys.argv[4]
 
-    with open(f"{save_folder_name}/front.dat", "wb") as file:
-        file.write(bytes(h264_front))
+    with open(f"{save_folder_name}/00.dat", "wb") as file:
+        file.write(bytes(h264_00))
 
     about_media = (
-        ffmpeg.probe(f"{save_folder_name}/front.dat")
+        ffmpeg.probe(f"{save_folder_name}/00.dat")
     )
 
     time_base = about_media['streams'][0]['time_base']
@@ -80,24 +90,40 @@ if __name__ == '__main__':
 
     save_media = (
         ffmpeg
-        .input(f"{save_folder_name}/front.dat")
-        .output(f"{save_folder_name}/front.avi", video_bitrate=int(time_base[2:]))
+        .input(f"{save_folder_name}/00.dat")
+        .output(f"{save_folder_name}/00.avi", video_bitrate=int(time_base[2:]))
         .run(overwrite_output=True)
     )
 
-    if (channel == 2):
-        with open(f"{save_folder_name}/back.dat", "wb") as file:
-            file.write(bytes(h264_back))
+    if (channel >= 1):
+        with open(f"{save_folder_name}/01.dat", "wb") as file:
+            file.write(bytes(h264_01))
 
         about_media = (
-            ffmpeg.probe(f"{save_folder_name}/back.dat")
+            ffmpeg.probe(f"{save_folder_name}/01.dat")
         )
 
         time_base = about_media['streams'][0]['time_base']
 
         save_media = (
             ffmpeg
-            .input(f"{save_folder_name}/back.dat")
-            .output(f"{save_folder_name}/back.avi", video_bitrate=int(time_base[2:]))
+            .input(f"{save_folder_name}/01.dat")
+            .output(f"{save_folder_name}/01.avi", video_bitrate=int(time_base[2:]))
+            .run(overwrite_output=True)
+        )
+    if (channel >= 2):
+        with open(f"{save_folder_name}/02.dat", "wb") as file:
+            file.write(bytes(h264_02))
+
+        about_media = (
+            ffmpeg.probe(f"{save_folder_name}/02.dat")
+        )
+
+        time_base = about_media['streams'][0]['time_base']
+
+        save_media = (
+            ffmpeg
+            .input(f"{save_folder_name}/02.dat")
+            .output(f"{save_folder_name}/02.avi", video_bitrate=int(time_base[2:]))
             .run(overwrite_output=True)
         )
