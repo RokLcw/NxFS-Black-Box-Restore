@@ -300,7 +300,7 @@ if __name__ == '__main__':
 
                 elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
                     h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    append_dataframe = [Frame_index, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                     h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
                 movi_list_pointer += (frame_size + 8)
@@ -331,7 +331,7 @@ if __name__ == '__main__':
 
                 elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
                     h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    append_dataframe = [Frame_index, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                     h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
                 if(data.find(b'\x00\x00\x00\x01\x65',  movi_list_pointer) != -1):
@@ -486,7 +486,7 @@ if __name__ == '__main__':
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = [Frame_index+1, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = [Frame_index+1, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
@@ -498,7 +498,7 @@ if __name__ == '__main__':
             # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
             h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
-            append_dataframe = [Frame_index+1, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+            append_dataframe = [Frame_index+1, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
             # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
             # print(append_dataframe)
             h264_frame.loc[len(h264_frame)] = append_dataframe
@@ -555,9 +555,9 @@ if __name__ == '__main__':
     save_folder_name = f"{now.year}{now.month:02}{now.day:02}_{now.hour:02}{now.minute:02}{now.second:02}"
 
     os.makedirs(f"./result/{save_folder_name}", exist_ok=True)
-    os.makedirs(f"./result/{save_folder_name}/frame/전방", exist_ok=True)
-    os.makedirs(f"./result/{save_folder_name}/frame/후방", exist_ok=True)
-    os.makedirs(f"./result/{save_folder_name}/frame/unknown", exist_ok=True)
+    os.makedirs(f"./result/{save_folder_name}/frame/00", exist_ok=True)
+    os.makedirs(f"./result/{save_folder_name}/frame/01", exist_ok=True)
+    os.makedirs(f"./result/{save_folder_name}/frame/02", exist_ok=True)
 
     # 전방, 후방 영상 추출
     # with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
@@ -617,7 +617,7 @@ if __name__ == '__main__':
         # print("\n")
 
         if '00' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/전방/"
+            save_path = f"./result/{save_folder_name}/frame/00dc/"
             cnt_front += 1
             with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
@@ -641,7 +641,7 @@ if __name__ == '__main__':
                 )
                 
         if '01' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/후방/"
+            save_path = f"./result/{save_folder_name}/frame/01dc/"
             cnt_back += 1
             with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
@@ -660,8 +660,8 @@ if __name__ == '__main__':
                     .run()
                 )
 
-        if 'unknown' in h264_frame.iloc[i, 1]:
-            save_path = f"./result/{save_folder_name}/frame/unknown/"
+        if '02dc' in h264_frame.iloc[i, 1]:
+            save_path = f"./result/{save_folder_name}/frame/02dc/"
             cnt_unknown += 1
             with open(f"{save_path}/frame{cnt_unknown}.dat", "wb") as frame:
                 start = h264_frame.iloc[i, 2]
