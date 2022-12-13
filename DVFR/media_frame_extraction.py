@@ -55,6 +55,8 @@ if __name__ == '__main__':
             media_start_offset = int(data.find(b"\x00\x00\x00\x01\x67")) - 8
             print("movi list 손상")
             check = 2
+        else:
+            exit(1)
         
 
     else:
