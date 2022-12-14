@@ -56,7 +56,10 @@ class Analysis_main():
         self.listWidget.setObjectName("listWidget")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
-        self.listWidget.addItem(sys.argv[1])
+        try:
+            self.listWidget.addItem(sys.argv[1])
+        except:
+            pass
 
 
         # 마우스 우클릭 메뉴
