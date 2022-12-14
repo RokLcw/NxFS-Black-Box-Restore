@@ -5,7 +5,7 @@ from View.image_process import image_process
 from View.slack_frame_extraction import slack_ext
 from View.avi_extraction import avi_ext
 
-import csv, time, glob
+import csv, time, glob, sys
 import itertools
 import os, threading, pyautogui 
 from functools import partial
@@ -28,6 +28,7 @@ from .PlayVideo import VideoPlayer
 class Analysis_main():
 
     def __init__(self, MainWindow):
+        self.folder = 0
 
         self.load_item = QtWidgets.QTextEdit() # 불러온 영상 리스트 보여줌
         self.fileInfo_item = QtWidgets.QListWidgetItem() # File Info
@@ -41,9 +42,6 @@ class Analysis_main():
     def active_main(self, MainWindow):
 
         self.menubar(MainWindow)    # menubar
-        
-        # 변환 파일 저장할 디렉터지 선택
-        self.folder = QtWidgets.QFileDialog.getExistingDirectory(None, '변환된 파일이 저장될 위치를 선택하세요.')
 
         # --------------------- 불러온 영상 리스트 ---------------------
         self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -57,6 +55,8 @@ class Analysis_main():
         self.listWidget.setGeometry(QtCore.QRect(0, 0, 281, 541))
         self.listWidget.setObjectName("listWidget")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.listWidget.addItem(sys.argv[1])
 
 
         # 마우스 우클릭 메뉴
@@ -141,6 +141,24 @@ class Analysis_main():
         self.scrollArea_4.setWidget(self.scrollAreaWidgetContents_4)
 
         self.tabWidget.addTab(self.tab_4, "")
+
+        #--------------------- Offset_3 ---------------------
+        self.tab_5 = QtWidgets.QWidget()
+        self.tab_5.setObjectName("tab_5")
+        self.scrollArea_5 = QtWidgets.QScrollArea(self.tab_5)
+        self.scrollArea_5.setGeometry(QtCore.QRect(0, 0, 621, 521))
+        self.scrollArea_5.setWidgetResizable(True)
+        self.scrollArea_5.setObjectName("scrollArea_5")
+        self.scrollAreaWidgetContents_5 = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents_5.setGeometry(QtCore.QRect(0, 0, 619, 519))
+        self.scrollAreaWidgetContents_5.setObjectName("scrollAreaWidgetContents_5")
+        
+        self.tableWidget_3 = QtWidgets.QTableWidget(self.scrollAreaWidgetContents_5)
+        self.tableWidget_3.setGeometry(QtCore.QRect(0, 0, 619, 519))
+        self.tableWidget_3.setObjectName("tableWidget")
+        self.scrollArea_5.setWidget(self.scrollAreaWidgetContents_5)
+
+        self.tabWidget.addTab(self.tab_5, "")
         
         # ---------------------------------
 
@@ -159,22 +177,33 @@ class Analysis_main():
         self.listWidget.itemSelectionChanged.connect(self.show_Result)
 
         # --------------------- Offset_1 ---------------------
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset_전방")
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset")
         self.tableWidget.setColumnCount(7)
         self.tableWidget.setHorizontalHeaderLabels(["id", "Ch.", "Offset", "EndOffset", "Size", "Damaged", "Etc"]) 
         self.tableWidget.setAlternatingRowColors(True) # 행 색깔 다르게
         self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
         self.tableWidget.setSortingEnabled(True) # 정렬
-        self.listWidget.itemSelectionChanged.connect(self.show_offset_1)
+        self.listWidget.itemSelectionChanged.connect(self.show_offset)
 
         # --------------------- Offset_2 ---------------------
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), "Offset_후방")
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), "Offset_01")
         self.tableWidget_2.setColumnCount(7)
         self.tableWidget_2.setHorizontalHeaderLabels(["id", "Ch.", "Offset", "EndOffset", "Size", "Damaged", "Etc"]) 
         self.tableWidget_2.setAlternatingRowColors(True) # 행 색깔 다르게
         self.tableWidget_2.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
         self.tableWidget_2.setSortingEnabled(True) # 정렬
-        self.listWidget.itemSelectionChanged.connect(self.show_offset_2)
+        self.listWidget.itemSelectionChanged.connect(self.show_offset)
+        self.tabWidget.setTabVisible(3, False)
+
+        # --------------------- Offset_3 ---------------------
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), "Offset_02")
+        self.tableWidget_3.setColumnCount(7)
+        self.tableWidget_3.setHorizontalHeaderLabels(["id", "Ch.", "Offset", "EndOffset", "Size", "Damaged", "Etc"]) 
+        self.tableWidget_3.setAlternatingRowColors(True) # 행 색깔 다르게
+        self.tableWidget_3.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
+        self.tableWidget_3.setSortingEnabled(True) # 정렬
+        self.listWidget.itemSelectionChanged.connect(self.show_offset)
+        self.tabWidget.setTabVisible(4, False)
 
         # --------------------- delete ---------------------
         self.pushButton_2.clicked.connect(self.file_del)
@@ -183,9 +212,9 @@ class Analysis_main():
         self.pushButton.clicked.connect(self.file_trf)
 
         # --------------------- menu bar ---------------------
-        self.menufile.setTitle(_translate("MainWindow", "file"))
-        self.menusetting.setTitle(_translate("MainWindow", "setting"))
-        self.menuabout.setTitle(_translate("MainWindow", "about"))
+        self.menufile.setTitle(_translate("MainWindow", "File"))
+        self.menusetting.setTitle(_translate("MainWindow", "Tool"))
+        self.menuabout.setTitle(_translate("MainWindow", "help"))
 
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -323,8 +352,8 @@ class Analysis_main():
 
         # about us
         self.actionabout_us = QtWidgets.QAction(MainWindow)
-        self.actionabout_us.setObjectName("actionabout_us")
-        about = QtWidgets.QAction('about_us', self.actionabout_us)
+        self.actionabout_us.setObjectName("Actionabout_us")
+        about = QtWidgets.QAction('About_us', self.actionabout_us)
 
         self.menuabout.addAction(about)
 
@@ -407,7 +436,6 @@ class Analysis_main():
         input_name = QtCore.QFileInfo(item.text()).fileName()
 
         full_folder = (f"{self.folder}/result/{input_name}/result")
-        print(full_folder)
 
         self.avi_ext = avi_ext(self, full_folder, input_data)
         #self.avi_end.connect(self.frame_end)
@@ -415,6 +443,9 @@ class Analysis_main():
 
     # '변환' 버튼 클릭 시 수행 함수
     def file_trf(self):
+        if(self.folder == 0):
+            # 변환 파일 저장할 디렉터지 선택
+            self.folder = QtWidgets.QFileDialog.getExistingDirectory(None, '변환된 파일이 저장될 위치를 선택하세요.')
 
         self.progressBar.setFormat('로딩 중입니다...')
 
@@ -439,7 +470,7 @@ class Analysis_main():
             else:
                 self.slack_ex = slack_ext(full_folder, input_data)
                 self.slack_ex.start()
-                self.slack_ex.avi_end.connect(self.avi_end)
+                self.slack_ex.slack_end.connect(self.signal_slack)
                         
         else:
             pass
@@ -499,12 +530,12 @@ class Analysis_main():
                 #path = (f"{self.folder}/result/{input_name}/result/{save_folder_name}")
                 path = (f"{self.folder}/result/{input_name}/result")
 
-                image_path = path + '/frame_image_front/'
+                image_path = path + '/frame_image_00/'
 
                 x = 0
                 y = 0
                 
-                for i in range(2):
+                for i in range(3):
                     if(i == 0):
                         self.label = QtWidgets.QLabel()
                         self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
@@ -515,7 +546,17 @@ class Analysis_main():
                     if(i == 1):
                         x=0
                         y += 1
-                        image_path = path + '/frame_image_back/'
+                        image_path = path + '/frame_image_01/'
+                        self.label = QtWidgets.QLabel()
+                        self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
+                        #self.label.setText("후방 프레임")
+                        self.gridLayout.addWidget(self.label)
+                        x=4
+                        y+=1
+                    if(i == 2):
+                        x=0
+                        y += 1
+                        image_path = path + '/frame_image_02/'
                         self.label = QtWidgets.QLabel()
                         self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
                         #self.label.setText("후방 프레임")
@@ -545,6 +586,10 @@ class Analysis_main():
                         x += 1
                     
                 self.progressBar.setFormat('이미지 로드 완료')
+
+                #self.button_path = QtWidgets.QPushButton()
+                #self.button_path.clicked.connect() 
+                #self.gridLayout.addWidget(self.button_img, y, x)
             
             else:
                 # slack 이미지 나열
@@ -552,7 +597,7 @@ class Analysis_main():
                 img_path = path + '/frame/'
                 x = 0
                 y = 0
-                print(img_path)
+
                 for file in os.listdir(img_path):
                     if('.jpg' in file):
                         if(x == 4):
@@ -621,7 +666,7 @@ class Analysis_main():
                     temp_item.setText(j+1, str(hexa))
 
     # offset 정보 나열 
-    def show_offset_1(self):
+    def show_offset(self):
         # 테이블의 모든 행 삭제
         self.tableWidget.setRowCount(0)
 
@@ -633,79 +678,67 @@ class Analysis_main():
             #path = "C:/Users/vkdrk/OneDrive/바탕화~1-LAPTOP-FBS87IKO-51235/result/20221204_011228"
             path = (f"{self.folder}/result/{input_name}/result")
 
+            self.tabWidget.setTabVisible(3, False)
+            self.tabWidget.setTabVisible(4, False)
+
             with open(path+'/offset_info.csv', 'rt') as f:
-                #x=0
                 reader = csv.reader(f)
                 next(reader, None)  # skip the headers
                 for row in reader:
                     if(row[2] == '00') or (row[2] == 'unknown'):
                         if(row[2] == '00'):
-                            self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset_전방")
+                            self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset_00")
                         else:
-                            self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset")
-                        rowPosition = self.tableWidget.rowCount()  #현재 table 행 개수 return
-                        self.tableWidget.insertRow(rowPosition)
+                            self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), "Offset_unknown")
+                        rowPosition_1 = self.tableWidget.rowCount()  #현재 table 행 개수 return
+                        self.tableWidget.insertRow(rowPosition_1)
                         for i in range(5):
                             if(i<2):
-                                self.tableWidget.setItem(rowPosition, i, QtWidgets.QTableWidgetItem(row[i+1]))
+                                self.tableWidget.setItem(rowPosition_1, i, QtWidgets.QTableWidgetItem(row[i+1]))
                             elif(i<5):
-                                self.tableWidget.setItem(rowPosition, i, QtWidgets.QTableWidgetItem(str(hex(int(row[i+1], 16)))))
+                                self.tableWidget.setItem(rowPosition_1, i, QtWidgets.QTableWidgetItem(str(hex(int(row[i+1], 16)))))
+                    elif(row[2] == '01'):
+                        self.tabWidget.setTabVisible(3, True)
+                        rowPosition_2 = self.tableWidget_2.rowCount()  #현재 table 행 개수 return
+                        self.tableWidget_2.insertRow(rowPosition_2)
+                        for i in range(5):
+                            if(i<2):
+                                self.tableWidget_2.setItem(rowPosition_2, i, QtWidgets.QTableWidgetItem(row[i+1]))
+                            elif(i<5):
+                                self.tableWidget_2.setItem(rowPosition_2, i, QtWidgets.QTableWidgetItem(str(hex(int(row[i+1], 16)))))
+                    else:
+                        self.tabWidget.setTabVisible(4, True)
+                        rowPosition_3 = self.tableWidget_3.rowCount()  #현재 table 행 개수 return
+                        self.tableWidget_3.insertRow(rowPosition_3)
+                        for i in range(5):
+                            if(i<2):
+                                self.tableWidget_3.setItem(rowPosition_3, i, QtWidgets.QTableWidgetItem(row[i+1]))
+                            elif(i<5):
+                                self.tableWidget_3.setItem(rowPosition_3, i, QtWidgets.QTableWidgetItem(str(hex(int(row[i+1], 16)))))
 
-            self.tableWidget.itemClicked.connect(partial(self.onItemClicked, path))
+            self.tableWidget.itemClicked.connect(partial(self.onItemClicked_1, path))
             self.tableWidget.verticalHeader().sectionClicked.connect(self.transhex_1)
+            self.tableWidget_2.itemClicked.connect(partial(self.onItemClicked_2, path))
+            self.tableWidget_2.verticalHeader().sectionClicked.connect(self.transhex_1)
+            self.tableWidget_3.itemClicked.connect(partial(self.onItemClicked_3, path))
+            self.tableWidget_3.verticalHeader().sectionClicked.connect(self.transhex_1)
 
         else:
             pass
 
-    # offset 정보 나열 
-    def show_offset_2(self):
-        # 테이블의 모든 행 삭제
-        self.tableWidget_2.setRowCount(0)
+    def onItemClicked_1(self, path):
 
+        row_1 = self.tableWidget.currentIndex().row()
+        idx_1 = self.tableWidget.item(row_1, 0).text()
+        ch_1 = self.tableWidget.item(row_1, 1).text()
+        
         item = self.listWidget.currentItem()
         input_name = QtCore.QFileInfo(item.text()).fileName()
-                
-        if(os.path.isdir(f"{self.folder}/result/{input_name}/")):
 
-            #path = "C:/Users/vkdrk/OneDrive/바탕화~1-LAPTOP-FBS87IKO-51235/result/20221204_011228"
-            path = (f"{self.folder}/result/{input_name}/result")
-
-            with open(path+'/offset_info.csv', 'rt') as f:
-                reader = csv.reader(f)
-                next(reader, None)  # skip the headers
-                for row in reader:
-                    if(row[2] == '01'):
-                        self.tabWidget.setTabVisible(3, True)
-                        rowPosition = self.tableWidget_2.rowCount()  #현재 table 행 개수 return
-                        self.tableWidget_2.insertRow(rowPosition)
-                        for i in range(5):
-                            if(i<2):
-                                self.tableWidget_2.setItem(rowPosition, i, QtWidgets.QTableWidgetItem(row[i+1]))
-                            elif(i<5):
-                                self.tableWidget_2.setItem(rowPosition, i, QtWidgets.QTableWidgetItem(str(hex(int(row[i+1], 16)))))
-                    else:
-                        self.tabWidget.setTabVisible(3, False)
-
-            self.tableWidget_2.itemClicked.connect(partial(self.onItemClicked, path))
-            self.tableWidget_2.verticalHeader().sectionClicked.connect(self.transhex_2)
-
-        else:
-            pass
-
-    #@QtCore.pyqtSlot(QtWidgets.QTableWidgetItem, int)
-    def onItemClicked(self, path):
-        #apath = "C:/Users/vkdrk/OneDrive/바탕화~1-LAPTOP-FBS87IKO-51235/result/20221204_011228"
-
-        row = self.tableWidget.currentIndex().row()
-        print(row)
+        path = (f"{self.folder}/result/{input_name}/result")
 
         # 'offset_info_pframe' 파일 있는지 확인
         if os.path.isfile(path + "/offset_info_pframe.csv"):
-            file = pd.read_csv(path + "/offset_info.csv")
-
-            idx = file.iloc[row, 1]
-            ch = file.iloc[row, 2]
-
             self.windows = []
             
             self.dialog_pframe = QtWidgets.QDialog()
@@ -713,20 +746,109 @@ class Analysis_main():
             self.treeWidget_click.setGeometry(QtCore.QRect(0, 0, 619, 519))
             self.treeWidget_click.setObjectName("treeWidget_click")
             self.treeWidget_click.setColumnCount(5)
-            #self.tableWidget_click.setHorizontalHeaderLabels(["Ch." , "Offset" , "EndOffset", "Size", "Damaged"]) 
             self.treeWidget_click.setHeaderLabels(["Ch." , "Offset" , "EndOffset", "Size", "Damaged"])
             self.treeWidget_click.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
             self.treeWidget_click.setAlternatingRowColors(True)
 
             with open(path + '/offset_info_pframe.csv', 'rt') as f:
-                x=0
+                x1=0
                 reader = csv.reader(f)
                 next(reader, None)  # skip the headers
                 for row in reader:
-                    if(int(row[1]) == idx):
-                        if(int(row[2]) == ch):
+                    if(row[1] == idx_1):
+                        if(row[2] == ch_1):
                             QtWidgets.QTreeWidgetItem(self.treeWidget_click, row[2:]) 
-                    x += 1
+                    x1 += 1
+
+            self.treeWidget_click.setSortingEnabled(True)
+            #self.head = self.treeWidget_click.header()
+            self.treeWidget_click.itemClicked.connect(self.transhex_pframe)
+
+            #QDialog 세팅
+            self.dialog_pframe.setWindowTitle("Detail")
+            self.dialog_pframe.resize(500,450)
+            self.dialog_pframe.show()
+
+        else:
+            pass
+
+    def onItemClicked_2(self, path):
+        row_2 = self.tableWidget_2.currentIndex().row()
+        idx_2 = self.tableWidget_2.item(row_2, 0).text()
+        ch_2 = self.tableWidget_2.item(row_2, 1).text()
+        
+        item = self.listWidget.currentItem()
+        input_name = QtCore.QFileInfo(item.text()).fileName()
+
+        path = (f"{self.folder}/result/{input_name}/result")
+
+        # 'offset_info_pframe' 파일 있는지 확인
+        if os.path.isfile(path + "/offset_info_pframe.csv"):
+            self.windows = []
+            
+            self.dialog_pframe = QtWidgets.QDialog()
+            self.treeWidget_click = QtWidgets.QTreeWidget(self.dialog_pframe)
+            self.treeWidget_click.setGeometry(QtCore.QRect(0, 0, 619, 519))
+            self.treeWidget_click.setObjectName("treeWidget_click")
+            self.treeWidget_click.setColumnCount(5)
+            self.treeWidget_click.setHeaderLabels(["Ch." , "Offset" , "EndOffset", "Size", "Damaged"])
+            self.treeWidget_click.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
+            self.treeWidget_click.setAlternatingRowColors(True)
+
+            with open(path + '/offset_info_pframe.csv', 'rt') as f:
+                x2=0
+                reader = csv.reader(f)
+                next(reader, None)  # skip the headers
+                for row in reader:
+                    if(row[1] == idx_2):
+                        if(row[2] == ch_2):
+                            QtWidgets.QTreeWidgetItem(self.treeWidget_click, row[2:]) 
+                    x2 += 1
+
+            self.treeWidget_click.setSortingEnabled(True)
+            #self.head = self.treeWidget_click.header()
+            self.treeWidget_click.itemClicked.connect(self.transhex_pframe)
+
+            #QDialog 세팅
+            self.dialog_pframe.setWindowTitle("Detail")
+            self.dialog_pframe.resize(500,450)
+            self.dialog_pframe.show()
+
+        else:
+            pass
+
+    def onItemClicked_3(self, path):
+        row_3 = self.tableWidget_3.currentIndex().row()
+        idx_3 = self.tableWidget_3.item(row_3, 0).text()
+        ch_3 = self.tableWidget_3.item(row_3, 1).text()
+        
+        item = self.listWidget.currentItem()
+        input_name = QtCore.QFileInfo(item.text()).fileName()
+
+        path = (f"{self.folder}/result/{input_name}/result")
+
+        # 'offset_info_pframe' 파일 있는지 확인
+        if os.path.isfile(path + "/offset_info_pframe.csv"):
+            self.windows = []
+            
+            self.dialog_pframe = QtWidgets.QDialog()
+            self.treeWidget_click = QtWidgets.QTreeWidget(self.dialog_pframe)
+            self.treeWidget_click.setGeometry(QtCore.QRect(0, 0, 619, 519))
+            self.treeWidget_click.setObjectName("treeWidget_click")
+            self.treeWidget_click.setColumnCount(5)
+            self.treeWidget_click.setHeaderLabels(["Ch." , "Offset" , "EndOffset", "Size", "Damaged"])
+            self.treeWidget_click.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers) # 리스트 내용 변경 금지
+            self.treeWidget_click.setAlternatingRowColors(True)
+
+            with open(path + '/offset_info_pframe.csv', 'rt') as f:
+                x3=0
+                reader = csv.reader(f)
+                next(reader, None)  # skip the headers
+                for row in reader:
+                    if(row[1] == idx_3):
+                        if(row[2] == ch_3):
+                            QtWidgets.QTreeWidgetItem(self.treeWidget_click, row[2:]) 
+                    x3 += 1
 
             self.treeWidget_click.setSortingEnabled(True)
             #self.head = self.treeWidget_click.header()
@@ -744,101 +866,20 @@ class Analysis_main():
     def signal_1(self, input_data):
         self.image_proc = image_process(input_data, path)
         self.image_proc.start()
-        self.show_offset_1()
-        self.show_offset_2()
+        self.show_offset()
 
         self.image_proc.create_image.connect(partial(self.show_Result))
 
     def signal_slack(self):
-        self.show_offset_1()
+        self.show_offset()
         self.show_Result()
+
+        self.progressBar.setFormat('완료')
 
     # frame offset 파일 저장 완료 후 progressBar 상태메시지 변경
     def frame_end(self):
         self.progressBar.setFormat('offset 값 저장 완료. 이미지 로드 중')
-
+        
     def avi_end(self):
-        self.progressBar.setFormat('영상 저장')
-
-'''
-# 영상 출력 클래스
-class VideoPlayer(QMainWindow):
-    
-    def __init__(self, file):
-        path = "View/image(fake)/result/" + str(input_data) + "/"
-
-        super().__init__()
-
-        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        videoWidget = QVideoWidget()
-
-        self.playButton = QPushButton()
-        self.playButton.setEnabled(False)
-        self.playButton.setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
-        self.playButton.clicked.connect(self.play)
-
-        self.positionSlider = QSlider(Qt.Horizontal)
-        self.positionSlider.setRange(0, 0)
-        self.positionSlider.sliderMoved.connect(self.setPosition)
-
-        self.error = QLabel()
-        self.error.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-
-        # 파일 경로 설정
-        fileName = path + file
-        self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(fileName)))
-        self.playButton.setEnabled(True)
-
-        # 창 위젯 생성
-        wid = QWidget(self)
-        self.setCentralWidget(wid)
-    
-        # 레이아웃 생성
-        controlLayout = QHBoxLayout()
-        controlLayout.setContentsMargins(0, 0, 0, 0)
-        controlLayout.addWidget(self.playButton)
-        controlLayout.addWidget(self.positionSlider)
- 
-        layout = QVBoxLayout()
-        layout.addWidget(videoWidget)
-        layout.addLayout(controlLayout)
-        layout.addWidget(self.error)
-
-        # Set widget to contain window contents
-        wid.setLayout(layout)
-    
-        self.mediaPlayer.setVideoOutput(videoWidget)
-        self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
-        self.mediaPlayer.positionChanged.connect(self.positionChanged)
-        self.mediaPlayer.durationChanged.connect(self.durationChanged)
-        self.mediaPlayer.error.connect(self.handleError)
-
-        self.playButton.setEnabled(True)
-
-    def play(self):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.mediaPlayer.pause()
-        else:
-            self.mediaPlayer.play()
- 
-    def mediaStateChanged(self, state):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.playButton.setIcon(
-                    QtWidgets.QApplication.style().standardIcon(QtWidgets.QStyle.SP_MediaPause))
-        else:
-            self.playButton.setIcon(
-                    QtWidgets.QApplication.style().standardIcon(QtWidgets.QStyle.SP_MediaPlay))
- 
-    def positionChanged(self, position):
-        self.positionSlider.setValue(position)
- 
-    def durationChanged(self, duration):
-        self.positionSlider.setRange(0, duration)
- 
-    def setPosition(self, position):
-        self.mediaPlayer.setPosition(position)
- 
-    def handleError(self):
-        self.playButton.setEnabled(False)
-        self.error.setText("Error: " + self.mediaPlayer.errorString())
-'''
+        self.progressBar.setFormat('완료')
+        
