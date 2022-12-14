@@ -1,5 +1,5 @@
 from PyQt5.QtCore import *   
-import os, csv
+import os, csv, ffmpeg
 
 class image_process(QThread): 
     create_image = pyqtSignal()
@@ -22,18 +22,39 @@ class image_process(QThread):
             next(reader, None)  # skip the header
 
             os.makedirs(self.path + '/frame_offset', exist_ok=True)
-            os.makedirs(self.path + '/frame_image_front', exist_ok=True)
-            os.makedirs(self.path + '/frame_image_back', exist_ok=True)
 
             for row in reader:
-                #print(row)
                 output_file=open(self.path + '/frame_offset/'+str(row[3]),"wb")
                 output_file.write(data[int(row[3], 16):int(row[4], 16)])
 
                 if(row[2] == '00'):
-                    os.system("ffmpeg -i {}/frame_offset/{} {}/frame_image_front/{}.jpg".format(self.path, row[3], self.path, row[3]))
+                    os.makedirs(self.path + '/frame_image_00', exist_ok=True) 
+                    #os.system("ffmpeg -loglevel quiet -i {}/frame_offset/{} {}/frame_image_front/{}.jpg".format(self.path, row[3], self.path, row[3]))
+                    (
+                        ffmpeg
+                        .input(f"{self.path}/frame_offset/{row[3]}")
+                        .output(f"{self.path}/frame_image_00/{row[3]}.jpg")
+                        .run()
+                    )
+
+                elif(row[2] == '01'):
+                    os.makedirs(self.path + '/frame_image_01', exist_ok=True)
+                    #os.system("ffmpeg -loglevel quiet -i {}/frame_offset/{} {}/frame_image_back/{}.jpg".format(self.path, row[3], self.path, row[3]))
+                    (
+                        ffmpeg
+                        .input(f"{self.path}/frame_offset/{row[3]}")
+                        .output(f"{self.path}/frame_image_01/{row[3]}.jpg")
+                        .run()
+                    )
                 else:
-                    os.system("ffmpeg -i {}/frame_offset/{} {}/frame_image_back/{}.jpg".format(self.path, row[3], self.path, row[3]))
+                    os.makedirs(self.path + '/frame_image_02', exist_ok=True) 
+                    #os.system("ffmpeg -loglevel quiet -i {}/frame_offset/{} {}/frame_image_back/{}.jpg".format(self.path, row[3], self.path, row[3]))
+                    (
+                        ffmpeg
+                        .input(f"{self.path}/frame_offset/{row[3]}")
+                        .output(f"{self.path}/frame_image_02/{row[3]}.jpg")
+                        .run()
+                    )
 
         self.create_image.emit()
 

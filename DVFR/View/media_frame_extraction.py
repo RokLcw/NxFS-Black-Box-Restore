@@ -21,7 +21,6 @@ class frame_ext(QThread):
 
     @pyqtSlot()
     def run(self):
-
         def size_return(bytes):
             size_result = str(bytes) + 'Byte'
             if (bytes > 1024*1024*1024*1024):
@@ -40,17 +39,9 @@ class frame_ext(QThread):
         file_size = os.path.getsize(self.input_data)
 
         print('\n[*] Input_file :', self.input_data,' ','Size :', size_return(file_size),'\n')
-
-        # if(sys.argv[1][-3:] != "avi"):
-        #     print("Not AVI, check file")
-        #     exit(1)
-
         with open(self.input_data, "rb") as media_file:
             data = media_file.read()
         
-        # with open("result.avi", "ab") as f:
-        #     f.write(data)
-
         # 손상 유무 판단
         if(data[0:4] != b"\x52\x49\x46\x46"):
             # 헤더, idx1 값만 날아간 경우
@@ -69,6 +60,8 @@ class frame_ext(QThread):
                 media_start_offset = int(data.find(b"\x00\x00\x00\x01\x67")) - 8
                 print("movi list 손상")
                 check = 2
+            else:
+                exit(1)
             
 
         else:
@@ -172,7 +165,6 @@ class frame_ext(QThread):
             # print("idx1_start_offset: ", hex((idx1_start_offset + 8) + idx1_size))
             print("idx1_list_pointer: ", hex(idx1_list_pointer))
             # print(idx)
-                
             # -------------------movi list frame extraction-------------------
 
             # -------------------movi list header-------------------
@@ -205,7 +197,7 @@ class frame_ext(QThread):
         Frame_index = 0
         h264_front = []
         h264_back = []
-        channel = 1
+        # channel = 1
         h264_frame = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_Offset', 'End_Offset', 'Size'])    # sps, pps, iframe! (pframe 제외)
         h264_frame_pframe = pd.DataFrame(columns=['Frame_index', 'Channel', 'Start_offset', "End_Offset", "Size"])
 
@@ -215,6 +207,9 @@ class frame_ext(QThread):
 
         # exit(1)
         while(1):
+            # print(hex(movi_list_pointer))
+            # if(cnt==5):
+            #     exit(1)
             # Pframe
             if(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x41'):
                 # pframe 데이터프레임 Endoffset 값이 sps 데이터프레임 StartOffset 값보다 작아지면 index+1
@@ -237,6 +232,11 @@ class frame_ext(QThread):
                 elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
                     h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
                     append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                     h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
                 movi_list_pointer += (frame_size + 8)
@@ -270,6 +270,11 @@ class frame_ext(QThread):
                     append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
                     h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
 
+                elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                    h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                    append_dataframe = [Frame_index, 'unknown', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                    h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
 
                 movi_list_pointer += (frame_size + 8)
                 cnt += 1
@@ -277,9 +282,75 @@ class frame_ext(QThread):
                 # time.sleep(0.5)
 
                 continue
+
+            elif(data[movi_list_pointer+8:movi_list_pointer+13] == b'\x00\x00\x00\x01\x67'):
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                loc = data[movi_list_pointer+8:(movi_list_pointer+8) + frame_size].find(b"\x00\x00\x00\x01\x41")
+                # print(loc)
+                if(loc != -1):
+                    # print("frame size: ", hex(frame_size))
+                    # print(hex(movi_list_pointer))
+
+
+                #     movi_list_pointer += (frame_size + 8)
+                    if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
+                        h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
+                        h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                        h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    movi_list_pointer += (frame_size + 8)
+                    cnt += 1
+
+                    continue
+
+            elif(data[movi_list_pointer+9:movi_list_pointer+14] == b'\x00\x00\x00\x01\x67'):
+                frame_size = int.from_bytes(data[movi_list_pointer+5:movi_list_pointer+9], 'little')
+                loc = data[movi_list_pointer+9:(movi_list_pointer+9) + frame_size].find(b"\x00\x00\x00\x01\x41")
+                # print(loc)
+                if(loc != -1):
+                    movi_list_pointer += 1
+                    # print("frame size: ", hex(frame_size))
+                    # print(hex(movi_list_pointer))
+
+
+                    # movi_list_pointer += (frame_size + 8)
+                    if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 전방
+                        h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '00', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x64\x63'):   # 후방
+                        h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '01', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):   # 후방
+                        h264_back += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                        append_dataframe = [Frame_index, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                        h264_frame_pframe.loc[len(h264_frame_pframe)] = append_dataframe
+
+                    if(data.find(b'\x00\x00\x00\x01\x65',  movi_list_pointer) != -1):
+                        Frame_index += 1
+
+                    movi_list_pointer += (frame_size + 8)
+                    cnt += 1
+
+                    continue
+            
+            
             
             # SPS, PPS, Iframe
-            if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'):
+            if(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x30\x64\x63'): # 00dc
                 # print("\n전방")
                 frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
                 # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
@@ -312,7 +383,7 @@ class frame_ext(QThread):
                 # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
                 # print(append_dataframe)
                 h264_frame.loc[len(h264_frame)] = append_dataframe
-                channel = 2
+                # channel = 2
 
             elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x64\x63'): # 파인뷰 후방
                 movi_list_pointer += 1
@@ -325,7 +396,7 @@ class frame_ext(QThread):
                 # append_dataframe = ['01', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
                 # print(append_dataframe)
                 h264_frame.loc[len(h264_frame)] = append_dataframe
-                channel = 2
+                # channel = 2
 
             elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x74\x78'):
                 # print("\n텍스트")
@@ -359,6 +430,84 @@ class frame_ext(QThread):
                 frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
                 # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
             
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x32\x74\x78'):
+                movi_list_pointer += 1
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x74\x78'):
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x77\x62'):
+                movi_list_pointer += 1
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x33\x77\x62'):
+                movi_list_pointer += 1
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x33\x77\x62'):
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x31\x77\x62'):
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x31\x77\x62'):
+                movi_list_pointer += 1
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x34\x74\x78'):
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x34\x74\x78'):
+                movi_list_pointer += 1
+                # print("\n뭔데 이거~2")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+            
+            elif(data[movi_list_pointer:movi_list_pointer+4] == b'\x30\x32\x64\x63'):
+                # print("\n모름")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+                # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+                h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index+1, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+                # print(append_dataframe)
+                h264_frame.loc[len(h264_frame)] = append_dataframe
+
+            elif(data[movi_list_pointer+1:movi_list_pointer+5] == b'\x30\x32\x64\x63'):
+                movi_list_pointer += 1
+                # print("\n모름")
+                frame_size = int.from_bytes(data[movi_list_pointer+4:movi_list_pointer+8], 'little')
+                # print(data[movi_list_pointer+4:movi_list_pointer+8], hex(frame_size))
+                # h264_front.append(data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)])
+                h264_front += data[movi_list_pointer+8:movi_list_pointer+(frame_size + 8)]
+                append_dataframe = [Frame_index+1, '02', hex(movi_list_pointer+8), hex((movi_list_pointer + (frame_size + 8)) - 1), hex(frame_size)]    # 임시
+                # append_dataframe = ['전방', movi_list_pointer+8, (movi_list_pointer + (frame_size + 8)) - 1, frame_size]    # 임시
+                # print(append_dataframe)
+                h264_frame.loc[len(h264_frame)] = append_dataframe
+            
             # idx1 list에 있는 값들과 모두 일치할 경우
             # idx1 에서 값 파싱 -> 그걸로 data 영역에서 비교하면서 진행
             # 하다가 다른거 있으면 -> 뻑나는거임
@@ -371,6 +520,7 @@ class frame_ext(QThread):
                 
             else:
                 if(movi_list_magic_number[cnt] != data[movi_list_pointer:movi_list_pointer+4]):
+                    print(data[movi_list_pointer:movi_list_pointer+4])
                     print("\nLast movi_list_pointer: ", hex(movi_list_pointer))
                     unknown_movi_list_data = data[movi_list_pointer:idx1_start_offset-1]
                     unknown_movi_list_data_size = idx1_start_offset - movi_list_pointer
@@ -407,52 +557,51 @@ class frame_ext(QThread):
         print(h264_frame_pframe)
 
         os.makedirs(f"{self.folder}/result", exist_ok=True)
-        #os.makedirs(f"{self.folder}/result/{self.save_folder_name}/frame/전방", exist_ok=True)
-        #os.makedirs(f"{self.folder}/result/{self.save_folder_name}/frame/후방", exist_ok=True)
+        os.makedirs(f"{self.folder}/result/frame/00", exist_ok=True)
+        os.makedirs(f"{self.folder}/result/frame/01", exist_ok=True)
+        os.makedirs(f"{self.folder}/result/frame/02", exist_ok=True)
 
-        '''
         # 전방, 후방 영상 추출
-        with open(f"{self.folder}/result/front.dat", "wb") as frame:
-            frame.write(bytes(h264_front))
-            # print(h264_front)
+        # with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
+        #     frame.write(bytes(h264_front))
+        #     # print(h264_front)
 
-        about_media = (
-            ffmpeg.probe(f"{self.folder}/result/front.dat")
-        )
+        # about_media = (
+        #     ffmpeg.probe(f"./result/{save_folder_name}/front.dat")
+        # )
 
-        # print(about_media)
-        # print(type(about_media))
-        # print(about_media['streams'][0]['time_base'])
-        time_base = about_media['streams'][0]['time_base']
+        # # print(about_media)
+        # # print(type(about_media))
+        # # print(about_media['streams'][0]['time_base'])
+        # time_base = about_media['streams'][0]['time_base']
 
-        save_media = (
-            ffmpeg
-            .input(f"{self.folder}/result/front.dat")
-            .output(f"{self.folder}/result/front.avi", video_bitrate=int(time_base[2:])/1000)
-            .run()
-        )
+        # save_media = (
+        #     ffmpeg
+        #     .input(f"./result/{save_folder_name}/front.dat")
+        #     .output(f"./result/{save_folder_name}/front.avi", video_bitrate=int(time_base[2:])/1000)
+        #     .run()
+        # )
 
-        if (channel == 2):
-            with open(f"{self.folder}/result/back.dat", "wb") as frame:
-                frame.write(bytes(h264_back))
-                # print(h264_back)
+        # if (channel == 2):
+        #     with open(f"./result/{save_folder_name}/back.dat", "wb") as frame:
+        #         frame.write(bytes(h264_back))
+        #         # print(h264_back)
 
-            about_media = (
-                ffmpeg.probe(f"{self.folder}/result/back.dat")
-            )
+        #     about_media = (
+        #         ffmpeg.probe(f"./result/{save_folder_name}/back.dat")
+        #     )
 
-            # print(about_media)
-            # print(type(about_media))
-            # print(about_media['streams'][0]['time_base'])
-            time_base = about_media['streams'][0]['time_base']
+        #     # print(about_media)
+        #     # print(type(about_media))
+        #     # print(about_media['streams'][0]['time_base'])
+        #     time_base = about_media['streams'][0]['time_base']
 
-            save_media = (
-                ffmpeg
-                .input(f"{self.folder}/result/back.dat")
-                .output(f"{self.folder}/result/back.avi", video_bitrate=int(time_base[2:])/1000)
-                .run()
-            )
-        '''
+        #     save_media = (
+        #         ffmpeg
+        #         .input(f"./result/{save_folder_name}/back.dat")
+        #         .output(f"./result/{save_folder_name}/back.avi", video_bitrate=int(time_base[2:])/1000)
+        #         .run()
+        #     )
             
         # offset csv 저장
         h264_frame.to_csv(f'{self.folder}/result/offset_info.csv', encoding='CP949')
@@ -465,13 +614,16 @@ class frame_ext(QThread):
         # frame 단위로 저장
         cnt_front = 0
         cnt_back = 0
+        cnt_unknown = 0
+
+        sps_pps_data = bytes(data[int(h264_frame.iloc[0,2][2:], 16):data.find(b"\x00\x00\x00\x01\x65")])
 
         for i in range (0,len(h264_frame)):
             # print("start offset: ", hex(int(h264_frame.iloc[0, 1])), "\nend offset: ", int(h264_frame.iloc[0, 2]+1))
             # print("\n")
 
             if '00' in h264_frame.iloc[i, 1]:
-                save_path = f"{self.folder}/result/{self.save_folder_name}/frame/전방/"
+                save_path = f"./result/{save_folder_name}/frame/00/"
                 cnt_front += 1
                 with open(f"{save_path}/frame{cnt_front}.dat", "wb") as frame:
                     start = h264_frame.iloc[i, 2]
@@ -479,7 +631,13 @@ class frame_ext(QThread):
                     # print(type(start))
                     end = h264_frame.iloc[i, 3]
                     # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
-                    frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+                    frame_data = bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+
+                    if(frame_data.find(b"\x00\x00\x00\x01\x67") == -1 and frame_data.find(b"\x00\x00\x00\x01\x68") == -1):
+                        frame_data = sps_pps_data + frame_data
+                        frame.write(frame_data)
+                    else:
+                        frame.write(frame_data)
 
                     (
                         ffmpeg
@@ -489,7 +647,7 @@ class frame_ext(QThread):
                     )
                     
             if '01' in h264_frame.iloc[i, 1]:
-                save_path = f"{self.folder}/result/{self.save_folder_name}/frame/후방/"
+                save_path = f"./result/{save_folder_name}/frame/01/"
                 cnt_back += 1
                 with open(f"{save_path}/frame{cnt_back}.dat", "wb") as frame:
                     start = h264_frame.iloc[i, 2]
@@ -507,13 +665,33 @@ class frame_ext(QThread):
                         .output(f"{save_path}/frame{cnt_back}.jpg")
                         .run()
                     )
+
+            if '02' in h264_frame.iloc[i, 1]:
+                save_path = f"./result/{save_folder_name}/frame/02/"
+                cnt_unknown += 1
+                with open(f"{save_path}/frame{cnt_unknown}.dat", "wb") as frame:
+                    start = h264_frame.iloc[i, 2]
+                    # print(start[2:])
+                    end = h264_frame.iloc[i, 3]
+                    # print(end[2:])
+                    # print(int(end[2:], 16))
+                    # print(int(start[2:], 16), int(end[2:], 16))
+                    # bytes(data[int(start[2:], 16):int(end[2:], 16)+1])
+                    frame.write(bytes(data[int(start[2:], 16):int(end[2:], 16)+1]))
+
+                    (
+                        ffmpeg
+                        .input(f"{save_path}/frame{cnt_unknown}.dat")
+                        .output(f"{save_path}/frame{cnt_unknown}.jpg")
+                        .run()
+                    )
                     
         if(check == 1):
-            with open(f"{self.folder}/result/{self.save_folder_name}/unknown.dat", "wb") as frame:
+            with open(f"./result/{save_folder_name}/unknown.dat", "wb") as frame:
                 frame.write(bytes(unknown_movi_list_data))
             # print(h264_back)
         '''
-        
+
         # sps, pps, iframe, pframe 파싱
         # frame_index = int(input("원하는 프레임 정보: "))
         # h264_frame_Detail = pd.DataFrame(columns=['Frame', 'Start_Offset', 'End_Offset', 'Size']) # sps, pps, iframe, pframe, size

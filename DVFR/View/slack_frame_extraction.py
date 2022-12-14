@@ -31,6 +31,7 @@ class slack_ext(QThread):
         return size_result
 
     def run(self):
+        print("slack")
         start_time = time.time()
 
         file_size = os.path.getsize(self.input_data)
