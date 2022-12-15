@@ -26,10 +26,7 @@ from pathlib import Path
 from .PlayVideo import VideoPlayer
 
 class Analysis_main():
-
     def __init__(self, MainWindow):
-        self.folder = 0
-
         self.load_item = QtWidgets.QTextEdit() # 불러온 영상 리스트 보여줌
         self.fileInfo_item = QtWidgets.QListWidgetItem() # File Info
         self.Result_item = QtWidgets.QListWidgetItem()   # Result
@@ -40,6 +37,7 @@ class Analysis_main():
         self.active_main(MainWindow)
 
     def active_main(self, MainWindow):
+        self.folder = '0'
 
         self.menubar(MainWindow)    # menubar
 
@@ -166,9 +164,9 @@ class Analysis_main():
         # ---------------------------------
 
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Damaged Video File Retore (DVFR)"))
-        self.pushButton_2.setText(_translate("MainWindow", "삭제"))
-        self.pushButton.setText(_translate("MainWindow", "변환"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "File Restore"))
+        self.pushButton_2.setText(_translate("MainWindow", "Delete"))
+        self.pushButton.setText(_translate("MainWindow", "Frame_Export"))
         
         # --------------------- File Info ---------------------
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), "File Info")
@@ -217,7 +215,7 @@ class Analysis_main():
         # --------------------- menu bar ---------------------
         self.menufile.setTitle(_translate("MainWindow", "File"))
         self.menusetting.setTitle(_translate("MainWindow", "Tool"))
-        self.menuabout.setTitle(_translate("MainWindow", "help"))
+        self.menuabout.setTitle(_translate("MainWindow", "Help"))
 
         self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -280,6 +278,14 @@ class Analysis_main():
         #self.progressBar.hide()
         self.horizontalLayout_2.addWidget(self.progressBar)
 
+         # ---------------------  폴더 열기 버튼 ---------------------
+        self.btn_path = QtWidgets.QPushButton(self.horizontalLayoutWidget_2)
+        self.btn_path.setGeometry(QtCore.QRect(650, 560, 200, 31))
+        self.btn_path.setObjectName("btn_path")
+        self.btn_path.setText("폴더 열기")
+        self.btn_path.setHidden(True)
+        self.horizontalLayout_2.addWidget(self.btn_path)
+
     def menubar(self, MainWindow):
         # --------------------- menu bar ---------------------
         MainWindow.setCentralWidget(self.centralwidget)
@@ -325,9 +331,9 @@ class Analysis_main():
         openFolder.triggered.connect(self.showDialog_folder)
         '''
 
-        openSlack = QtWidgets.QAction( 'Open_Slack_File', self.menufile)
+        openSlack = QtWidgets.QAction( 'Open_Slack_Folder', self.menufile)
         openSlack.setShortcut('Ctrl+S')
-        openSlack.setStatusTip('Open Slack File')
+        openSlack.setStatusTip('Open Slack Folder')
         openSlack.triggered.connect(self.showDialog_folder)
         
         self.menufile.addAction(openFile)
@@ -409,7 +415,7 @@ class Analysis_main():
 
     # 불러온 영상 파일 리스트
     def showDialog_file(self):   
-        file_loc = QtWidgets.QFileDialog.getOpenFileName(self.menufile, 'Open file', './', 'avi(*.avi)')
+        file_loc = QtWidgets.QFileDialog.getOpenFileName(self.menufile, 'Open file', './', 'avi(*.avi);; dat(*.dat)')
         #file_loc = QtWidgets.QFileDialog.getOpenFileName(self.menufile, 'Open file', './')
         if file_loc[0]:
             self.load_item.setText(file_loc[0]) 
@@ -432,7 +438,9 @@ class Analysis_main():
 
     # 마우스 우클릭 시 영상 저장 
     def mouseRightClickEvent(self):
-        #self.progressBar.setFormat('영상 저장 중')
+        self.btn_path.setHidden(True)
+        self.progressBar.setHidden(False)
+        self.progressBar.setFormat('영상 저장 중')
         
         item = self.listWidget.currentItem()
         input_data = QtCore.QFileInfo(item.text()).filePath()
@@ -440,14 +448,16 @@ class Analysis_main():
 
         full_folder = (f"{self.folder}/result/{input_name}/result")
 
-        self.avi_ext = avi_ext(self, full_folder, input_data)
-        #self.avi_end.connect(self.frame_end)
+        self.avi_ext = avi_ext(full_folder, input_data)
+        self.avi_ext.start()
+        self.avi_ext.avi_end.connect(self.avi_end)
 
 
     # '변환' 버튼 클릭 시 수행 함수
     def file_trf(self):
-        if(self.folder == 0):
-            # 변환 파일 저장할 디렉터지 선택
+        self.progressBar.setFormat('')
+        if(self.folder == '0'):
+            # 변환 파일 저장할 디렉터리 선택
             self.folder = QtWidgets.QFileDialog.getExistingDirectory(None, '변환된 파일이 저장될 위치를 선택하세요.')
 
         self.progressBar.setFormat('로딩 중입니다...')
@@ -457,7 +467,6 @@ class Analysis_main():
             input_data = QtCore.QFileInfo(item.text()).filePath()
             input_name = QtCore.QFileInfo(item.text()).fileName()
 
-            #data =  self.input_data
             full_folder = (f"{self.folder}/result/{input_name}")
 
             global path
@@ -468,11 +477,15 @@ class Analysis_main():
             if('.avi' in input_data):
                 self.frame_ex = frameEx(full_folder, input_data)
                 self.frame_ex.start()
+                self.pushButton.setDisabled(True)
+                self.pushButton_2.setDisabled(True)
                 self.frame_ex.create_file.connect(partial(self.signal_1, input_data))
                 self.frame_ex.frame_end.connect(self.frame_end)
             else:
                 self.slack_ex = slack_ext(full_folder, input_data)
                 self.slack_ex.start()
+                self.pushButton.setDisabled(True)
+                self.pushButton_2.setDisabled(True)
                 self.slack_ex.slack_end.connect(self.signal_slack)
                         
         else:
@@ -515,10 +528,8 @@ class Analysis_main():
 
     # Result 탭에 이미지 보여주기
     def show_Result(self): 
-        #global folName
-        #folName = "20221130_204449"
-        #apath = "C:/Users/vkdrk/OneDrive/바탕화~1-LAPTOP-FBS87IKO-51235/result/20221204_011228"
-
+        self.btn_path.setHidden(True)
+        self.progressBar.setHidden(False)
         #Layout의 모든 widget 메소드 삭제
         for i in range(self.gridLayout.count()):
             self.gridLayout.itemAt(i).widget().deleteLater() 
@@ -530,8 +541,8 @@ class Analysis_main():
         if(os.path.isdir(f"{self.folder}/result/{input_name}/")):
 
             if('.avi' in input_data):
-                #path = (f"{self.folder}/result/{input_name}/result/{save_folder_name}")
                 path = (f"{self.folder}/result/{input_name}/result")
+                self.full_path = (f"{self.folder}/result/{input_name}/result")
 
                 image_path = path + '/frame_image_00/'
 
@@ -542,30 +553,40 @@ class Analysis_main():
                     if(i == 0):
                         self.label = QtWidgets.QLabel()
                         self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
-                        #self.label.setText("전방 프레임")
+                        #self.label.setText("00")
                         self.gridLayout.addWidget(self.label)
                         x=4
 
                     if(i == 1):
-                        x=0
-                        y += 1
-                        image_path = path + '/frame_image_01/'
-                        self.label = QtWidgets.QLabel()
-                        self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
-                        #self.label.setText("후방 프레임")
-                        self.gridLayout.addWidget(self.label)
-                        x=4
                         y+=1
+                        
+                        if(os.path.isdir(f"{path}/frame_image_01/")):
+                            x=0
+                            #y += 1
+                            image_path = path + '/frame_image_01/'
+                            self.label = QtWidgets.QLabel()
+                            self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
+                            #self.label.setText("01")
+                            self.gridLayout.addWidget(self.label)
+                            x=4
+                            y+=1
+                        else:
+                            break
                     if(i == 2):
-                        x=0
-                        y += 1
-                        image_path = path + '/frame_image_02/'
-                        self.label = QtWidgets.QLabel()
-                        self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
-                        #self.label.setText("후방 프레임")
-                        self.gridLayout.addWidget(self.label)
-                        x=4
                         y+=1
+                        
+                        if(os.path.isdir(f"{path}/frame_image_02/")):
+                            x=0
+                            #y += 1
+                            image_path = path + '/frame_image_02/'
+                            self.label = QtWidgets.QLabel()
+                            self.label.setGeometry(QtCore.QRect(0, 0, 650, 521))
+                            #self.label.setText("02")
+                            self.gridLayout.addWidget(self.label)
+                            x=4
+                            y+=1
+                        else:
+                            break
                         
                     for file in os.listdir(image_path):
                         
@@ -588,15 +609,14 @@ class Analysis_main():
                         self.gridLayout.addWidget(self.button_img, y, x)
                         x += 1
                     
-                self.progressBar.setFormat('이미지 로드 완료')
-
-                #self.button_path = QtWidgets.QPushButton()
-                #self.button_path.clicked.connect() 
-                #self.gridLayout.addWidget(self.button_img, y, x)
+                self.progressBar.setFormat('변환 버튼을 클릭해주세요.')
+                self.pushButton.setDisabled(False)
+                self.pushButton_2.setDisabled(False)
             
             else:
                 # slack 이미지 나열
                 path = (f"{self.folder}/result/{input_name}/result")
+                self.full_path = (f"{self.folder}/result/{input_name}/result")
                 img_path = path + '/frame/'
                 x = 0
                 y = 0
@@ -616,17 +636,20 @@ class Analysis_main():
                         self.gridLayout.addWidget(self.button_img, y, x)
                         x += 1
 
-                self.progressBar.setFormat('완료')
+                #self.progressBar.setFormat('완료')
+            self.progressBar.setHidden(True)
+
+            # 저장 폴더 열기 버튼
+            self.btn_path.setHidden(False)
+            self.btn_path.clicked.connect(partial(self.btn_path_open, self.full_path))
 
         else:
             pass
-
     
     # verticalHeader 클릭하면 진수 변경
     def transhex_1(self):
         print("진수 변경")
         if('0x' in str(self.tableWidget.item(0,2).text())):
-            #print(self.tableWidget.rowCount())
             for i in range(self.tableWidget.rowCount()):
                 for j in range(3):
                     dec = int(self.tableWidget.item(i,j+2).text(), 16)
@@ -640,7 +663,6 @@ class Analysis_main():
     def transhex_2(self):
         print("진수 변경")
         if('0x' in str(self.tableWidget_2.item(0,2).text())):
-            #print(self.tableWidget.rowCount())
             for i in range(self.tableWidget_2.rowCount()):
                 for j in range(3):
                     dec = int(self.tableWidget_2.item(i,j+2).text(), 16)
@@ -764,7 +786,6 @@ class Analysis_main():
                     x1 += 1
 
             self.treeWidget_click.setSortingEnabled(True)
-            #self.head = self.treeWidget_click.header()
             self.treeWidget_click.itemClicked.connect(self.transhex_pframe)
 
             #QDialog 세팅
@@ -809,7 +830,6 @@ class Analysis_main():
                     x2 += 1
 
             self.treeWidget_click.setSortingEnabled(True)
-            #self.head = self.treeWidget_click.header()
             self.treeWidget_click.itemClicked.connect(self.transhex_pframe)
 
             #QDialog 세팅
@@ -854,7 +874,6 @@ class Analysis_main():
                     x3 += 1
 
             self.treeWidget_click.setSortingEnabled(True)
-            #self.head = self.treeWidget_click.header()
             self.treeWidget_click.itemClicked.connect(self.transhex_pframe)
 
             #QDialog 세팅
@@ -877,7 +896,10 @@ class Analysis_main():
         self.show_offset()
         self.show_Result()
 
-        self.progressBar.setFormat('완료')
+        #self.progressBar.setFormat('완료')
+        self.progressBar.setFormat('변환 버튼을 클릭해주세요.')
+        self.pushButton.setDisabled(False)
+        self.pushButton_2.setDisabled(False)
 
     # frame offset 파일 저장 완료 후 progressBar 상태메시지 변경
     def frame_end(self):
@@ -885,4 +907,7 @@ class Analysis_main():
         
     def avi_end(self):
         self.progressBar.setFormat('완료')
-        
+        self.btn_path.setHidden(False)
+
+    def btn_path_open(self, path):
+        os.startfile(path)

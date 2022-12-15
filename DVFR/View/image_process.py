@@ -34,7 +34,7 @@ class image_process(QThread):
                         ffmpeg
                         .input(f"{self.path}/frame_offset/{row[3]}")
                         .output(f"{self.path}/frame_image_00/{row[3]}.jpg")
-                        .run()
+                        .run(overwrite_output=True)
                     )
 
                 elif(row[2] == '01'):
@@ -44,7 +44,7 @@ class image_process(QThread):
                         ffmpeg
                         .input(f"{self.path}/frame_offset/{row[3]}")
                         .output(f"{self.path}/frame_image_01/{row[3]}.jpg")
-                        .run()
+                        .run(overwrite_output=True)
                     )
                 else:
                     os.makedirs(self.path + '/frame_image_02', exist_ok=True) 
@@ -53,8 +53,10 @@ class image_process(QThread):
                         ffmpeg
                         .input(f"{self.path}/frame_offset/{row[3]}")
                         .output(f"{self.path}/frame_image_02/{row[3]}.jpg")
-                        .run()
+                        .run(overwrite_output=True)
                     )
+                    
+        file.close()
 
         self.create_image.emit()
 

@@ -557,9 +557,9 @@ class frame_ext(QThread):
         print(h264_frame_pframe)
 
         os.makedirs(f"{self.folder}/result", exist_ok=True)
-        os.makedirs(f"{self.folder}/result/frame/00", exist_ok=True)
-        os.makedirs(f"{self.folder}/result/frame/01", exist_ok=True)
-        os.makedirs(f"{self.folder}/result/frame/02", exist_ok=True)
+        #os.makedirs(f"{self.folder}/result/frame/00", exist_ok=True)
+        #os.makedirs(f"{self.folder}/result/frame/01", exist_ok=True)
+        #os.makedirs(f"{self.folder}/result/frame/02", exist_ok=True)
 
         # 전방, 후방 영상 추출
         # with open(f"./result/{save_folder_name}/front.dat", "wb") as frame:
