@@ -5,7 +5,8 @@ class MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(950, 650)
-        MainWindow.setWindowIcon(QIcon('main_logo.png'))
+        #MainWindow.setWindowIcon(QIcon('main_logo.ico'))
+        MainWindow.setWindowIcon(QIcon('../main_logo.ico'))
     
         self.Analysis_main = Analysis_main(MainWindow)
 
