@@ -1,10 +1,1 @@
-~20221011
-1. made file open function
-
-~20221016
-2. made file metadata parsing function
-
-~20221025
-made parsing page to display hex data
-
-(Now) Analyzing NXFS filesystem 
+1. sqquery.py, newcore.py, NxFS_Analyzer.py 는 반드시 한 폴더 내에 같이 있어야 합니다.
