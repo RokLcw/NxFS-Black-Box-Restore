@@ -12,11 +12,11 @@ NxFS Analyzer 파일은 NxFS 파일시스템을 대상으로 할당/미할당/�
 * https://drive.google.com/file/d/1PKmT5lgqcSf9RrzLGypQ4LmFk5_Zlg9J/view?usp=sharing
 
 ## 프로젝트 팀원
-* 이찬우 ([@RokLcw](https://github.com/RokLcw))
-* 오주연 ([@juyeonoh](https://github.com/juyeonoh))
-* 이정인 ([@jeong0000](https://github.com/jeong0000))
-* 박수영 ([@swimminq](https://github.com/swimminq))
-* 고서정 ([@revibk16](https://github.com/revibk16))
-* PL: 문현지 ([@hyunjm95](https://github.com/hyunjm95))
-* 멘토: 최원영 ([@fl0ckfl0ck](https://github.com/fl0ckfl0ck))
-* 멘토: 윤상혁 ([@trudy85](https://github.com/trudy85))
+* 이찬우 ([RokLcw](https://github.com/RokLcw))
+* 오주연 ([juyeonoh](https://github.com/juyeonoh))
+* 이정인 ([jeong0000](https://github.com/jeong0000))
+* 박수영 ([swimminq](https://github.com/swimminq))
+* 고서정 ([revibk16](https://github.com/revibk16))
+* PL: 문현지 ([hyunjm95](https://github.com/hyunjm95))
+* 멘토: 최원영 ([fl0ckfl0ck](https://github.com/fl0ckfl0ck))
+* 멘토: 윤상혁 ([trudy85](https://github.com/trudy85))
