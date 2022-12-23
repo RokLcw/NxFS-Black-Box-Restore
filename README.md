@@ -11,7 +11,11 @@ File Restore 파일은 파일시스템 슬랙 영역, 손상된 영상, 영상 �
 직접 테스트 했을 때 복구에 성공한 제품은 Carmore CM-3000, CM-3300, URIVE A5 입니다.
 
 ## 도구 사용 매뉴얼
-* https://drive.google.com/file/d/1PKmT5lgqcSf9RrzLGypQ4LmFk5_Zlg9J/view?usp=sharing
+* https://drive.google.com/file/d/1Kvhkj-pzKKQJy1b0jq67cFaff4pAIwq-/view?usp=sharing
+
+## CLI 명령어
+* NxFS Analyzer: newcore.py 이용하여 도구 사용 가능. (python newcore.py -h)
+* File Restore: 추가 예정
 
 ## 프로젝트 팀원
 * 이찬우 ([@RokLcw](https://github.com/RokLcw))
