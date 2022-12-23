@@ -12,6 +12,8 @@ File Restore 파일은 파일시스템 슬랙 영역, 손상된 영상, 영상 �
 
 Releases Tab에서 바이너리 파일 확인하실 수 있습니다.
 
+2개월이라는 짧은 시간으로 많은 부분에 개선해야될 점이 존재합니다.
+
 ## 도구 사용 매뉴얼
 * https://drive.google.com/file/d/1Kvhkj-pzKKQJy1b0jq67cFaff4pAIwq-/view?usp=sharing
 
