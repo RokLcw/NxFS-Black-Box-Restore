@@ -10,7 +10,7 @@ File Restore 파일은 파일시스템 슬랙 영역, 손상된 영상, 영상 �
 
 직접 테스트 했을 때 복구에 성공한 제품은 Carmore CM-3000, CM-3300, URIVE A5 입니다.
 
-Releases Ta에서 바이너리 파일 확인하실 수 있습니다.
+Releases Tab에서 바이너리 파일 확인하실 수 있습니다.
 
 ## 도구 사용 매뉴얼
 * https://drive.google.com/file/d/1Kvhkj-pzKKQJy1b0jq67cFaff4pAIwq-/view?usp=sharing
