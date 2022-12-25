@@ -18,7 +18,7 @@ Releases Tab에서 바이너리 파일 확인하실 수 있습니다.
 * https://drive.google.com/file/d/1Kvhkj-pzKKQJy1b0jq67cFaff4pAIwq-/view?usp=sharing
 
 ## CLI 명령어
-* NxFS Analyzer: newcore.py 이용하여 도구 사용 가능. (python newcore.py -h)
+* NxFS Analyzer: newcore.py 이용하여 도구 사용 가능. (명령어 정보: python newcore.py -h)
 * File Restore: 추가 예정
 
 ## 프로젝트 팀원
